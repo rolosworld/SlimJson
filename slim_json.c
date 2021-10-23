@@ -273,7 +273,6 @@ static char test_json_parse_number() {
   char v3 = ((float) num3->value) == ((float) 1023);
   free(num3);
 
-
   return v1 && v2 && v3;
 }
 
@@ -318,6 +317,18 @@ static JsonBool* json_parse_bool(const char* _encoded, size_t _len) {
   return bol;
 }
 
+static char test_json_parse_bool() {
+  char b1[] = " true ";
+  JsonBool* B1 = json_parse_bool(b1, sizeof(b1) - 1);
+  char v1 = B1->value == 1;
+
+  char b2[] = " false ";
+  JsonBool* B2 = json_parse_bool(b2, sizeof(b2) - 1);
+  char v2 = B2->value == 0;
+
+  return v1 && v2;
+}
+
 // null
 static JsonNull* json_parse_null(const char* _encoded, size_t _len) {
   if (_len == 0) {
@@ -345,6 +356,14 @@ static JsonNull* json_parse_null(const char* _encoded, size_t _len) {
   JsonNull* nul = malloc(sizeof(JsonNull));
   nul->value = 0;
   return nul;
+}
+
+static char test_json_parse_null() {
+  char n[] = " null ";
+  JsonNull* N = json_parse_null(n, sizeof(n) - 1);
+  char v = N->value == 0;
+
+  return v;
 }
 
 // Object
@@ -606,5 +625,6 @@ int main(int argc, const char* argv[])
   printf("test_json_parse_string: %d\n", test_json_parse_string());
   printf("test_json_is_digit: %d\n", test_json_is_digit());
   printf("test_json_parse_number: %d\n", test_json_parse_number());
+  printf("test_json_parse_bool: %d\n", test_json_parse_bool());
   return 0;
 }
