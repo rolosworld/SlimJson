@@ -75,14 +75,14 @@ void json_free_arrayItem(JsonArrayItem* _item);
 void json_free_array(JsonArray* _arr);
 
 // Parse
-JsonString* json_parse_string(const char* _encoded, size_t _len);
-JsonNumber* json_parse_number(const char* _encoded, size_t _len);
-JsonBool* json_parse_bool(const char* _encoded, size_t _len);
-JsonNull* json_parse_null(const char* _encoded, size_t _len);
-JsonObject* json_parse_object(const char* _encoded, size_t _len);
-JsonArray* json_parse_array(const char* _encoded, size_t _len);
-Json* json_parse_value(const char* _encoded, size_t _len);
-JsonObjectAttribute* json_parse_objectAttribute(const char* _encoded, size_t _len);
+JsonString* json_parse_string(const char* _encoded, size_t* _len);
+JsonNumber* json_parse_number(const char* _encoded, size_t* _len);
+JsonBool* json_parse_bool(const char* _encoded, size_t* _len);
+JsonNull* json_parse_null(const char* _encoded, size_t* _len);
+JsonObject* json_parse_object(const char* _encoded, size_t* _len);
+JsonArray* json_parse_array(const char* _encoded, size_t* _len);
+Json* json_parse_value(const char* _encoded, size_t* _len);
+JsonObjectAttribute* json_parse_objectAttribute(const char* _encoded, size_t* _len);
 
 // Add
 void json_add_objectAttribute(JsonObject* _obj, JsonObjectAttribute* _attr);
