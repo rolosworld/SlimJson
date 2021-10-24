@@ -1,73 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-
-#define JSON_OBJECT '{'
-#define JSON_ARRAY  '['
-#define JSON_STRING '"'
-#define JSON_NUMBER 2
-#define JSON_BOOL   1
-#define JSON_NULL   0
-
-#define JSON_OBJECT_END '}'
-#define JSON_ARRAY_END  ']'
-
-typedef struct {
-  char type;
-  void* data;
-  size_t size;
-} Json;
-
-
-// String
-typedef struct {
-  char* value;
-  size_t length;
-} JsonString;
-
-// Number
-typedef struct {
-  double value;
-} JsonNumber;
-
-// Bool
-typedef struct {
-  unsigned char value;
-} JsonBool;
-
-// Null
-typedef struct {
-  unsigned char value;
-} JsonNull;
-
-// Array
-typedef struct JsonArrayItem {
-  struct JsonArrayItem* next;
-  Json* data;
-} JsonArrayItem;
-
-typedef struct {
-  JsonArrayItem* first;
-  JsonArrayItem* last;
-  size_t length;
-} JsonArray;
-
-// Object
-typedef struct JsonObjectAttribute {
-  struct JsonObjectAttribute* next;
-  JsonString* name;
-  Json* data;
-} JsonObjectAttribute;
-
-typedef struct {
-  JsonObjectAttribute* first;
-  JsonObjectAttribute* last;
-} JsonObject;
-
-void json_free(Json* _data);
-void json_free_objectAttribute(JsonObjectAttribute* _attr);
-
-
-#define JSON_ERROR(_err) do { printf("ERROR: %s", _err); } while (0)
+#include "slim_json.h"
 
 // skip_escaped: Skip if the character has a \ before it
 size_t json_string_indexOf(char _c, const char* _str, size_t _len, unsigned char skip_escaped) {
@@ -373,7 +306,19 @@ char test_json_parse_null() {
 
 // Object
 JsonObject* json_parse_object(const char* _encoded, size_t _len) {
-  return NULL;
+  if (_len == 0) {
+    return NULL;
+  }
+
+  _encoded = json_string_ltrim(_encoded, &_len);
+
+  if (_encoded == NULL) {
+    return NULL;
+  }
+
+  if (_encoded[0] != '{') {
+    return NULL;
+  }
 }
 
 void json_add_objectAttribute(JsonObject* _obj, JsonObjectAttribute* _attr) {
