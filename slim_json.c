@@ -8,16 +8,17 @@ size_t json_string_indexOf(char _c, EncodedJson* _enc, unsigned char _skip_escap
     return -1;
   }
 
-  while (--_enc->length) {
-    if (_enc->string[_enc->length] == '\0') {
+  size_t len = _enc->length;
+  while (--len) {
+    if (_enc->string[len] == '\0') {
       return -1;
     }
-    else if (_enc->string[_enc->length] == _c) {
-      if (_skip_escaped == 1 && _enc->length > 0 && _enc->string[_enc->length - 1] == '\\') {
+    else if (_enc->string[len] == _c) {
+      if (_skip_escaped == 1 && len > 0 && _enc->string[len - 1] == '\\') {
 	continue;
       }
 
-      return _enc->length;
+      return len;
     }
   }
 
@@ -77,15 +78,23 @@ JsonString* json_string(EncodedJson* _enc) {
     return NULL;
   }
 
+  size_t end = json_string_indexOf(JSON_STRING, _enc, 1);
+  if (end < 0) {
+    return NULL;
+  }
+
   JsonString* str = malloc(sizeof(JsonString));
-  str->length = _enc->length;
-  char* v = malloc(sizeof(char) * _enc->length + 1);
-  v[_enc->length] = '\0';
+  str->length = end;
+  char* v = malloc(sizeof(char) * end + 1);
+  v[end] = '\0';
   str->value = v;
 
-  while(_enc->length--) {
-    v[_enc->length] = _enc->string[_enc->length];
+  while(end--) {
+    v[end] = _enc->string[end];
   }
+
+  _enc->string += end;
+  _enc->length -= end;
 
   return str;
 }
@@ -103,12 +112,7 @@ JsonString* json_parse_string(EncodedJson* _enc) {
 
   _enc->length--;
   _enc->string++;
-  size_t end = json_string_indexOf(JSON_STRING, _enc, 1);
-  if (end < 0) {
-    return NULL;
-  }
 
-  _enc->length -= end;
   return json_string(_enc);
 }
 
