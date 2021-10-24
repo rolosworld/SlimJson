@@ -11,15 +11,17 @@
 #define JSON_OBJECT_END '}'
 #define JSON_ARRAY_END  ']'
 
+typedef enum {
+  JSON_ERROR
+} JsonErrorType;
+
 typedef struct {
-  char* string;
+  const char* current;
+  const char* start;
+  size_t position;
   size_t length;
-  // TODO:
-  // Stream Position
-  // size_t pos;
-  // Error enum
-  // JsonError error;
-} EncodedJson;
+  JsonErrorType error;
+} JsonStream;
 
 typedef struct {
   char type;
@@ -83,26 +85,26 @@ void json_free_arrayItem(JsonArrayItem* _item);
 void json_free_array(JsonArray* _arr);
 
 // Parse
-JsonString* json_parse_string(EncodedJson* _enc);
-JsonNumber* json_parse_number(EncodedJson* _enc);
-JsonBool* json_parse_bool(EncodedJson* _enc);
-JsonNull* json_parse_null(EncodedJson* _enc);
-JsonObject* json_parse_object(EncodedJson* _enc);
-JsonArray* json_parse_array(EncodedJson* _enc);
-Json* json_parse_value(EncodedJson* _enc);
-JsonObjectAttribute* json_parse_objectAttribute(EncodedJson* _enc);
-JsonArrayItem* json_parse_arrayItem(EncodedJson* _enc);
+JsonString* json_parse_string(JsonStream* _enc);
+JsonNumber* json_parse_number(JsonStream* _enc);
+JsonBool* json_parse_bool(JsonStream* _enc);
+JsonNull* json_parse_null(JsonStream* _enc);
+JsonObject* json_parse_object(JsonStream* _enc);
+JsonArray* json_parse_array(JsonStream* _enc);
+Json* json_parse_value(JsonStream* _enc);
+JsonObjectAttribute* json_parse_objectAttribute(JsonStream* _enc);
+JsonArrayItem* json_parse_arrayItem(JsonStream* _enc);
 
 // Add
 void json_add_objectAttribute(JsonObject* _obj, JsonObjectAttribute* _attr);
 void json_add_arrayItem(JsonArray* _arr, JsonArrayItem* _item);
 
 // Decode
-Json* json_decode(EncodedJson* _enc);
+Json* json_decode(JsonStream* _enc);
 
 // String
-size_t json_string_indexOf(char _c, EncodedJson* _enc, unsigned char _skip_escaped);
-void json_string_ltrim(EncodedJson* _enc);
+size_t json_string_indexOf(char _c, JsonStream* _enc, unsigned char _skip_escaped);
+void json_string_ltrim(JsonStream* _enc);
 
 // Number
 char json_is_digit(char c);

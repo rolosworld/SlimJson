@@ -3,18 +3,18 @@
 #include "slim_json.h"
 
 // skip_escaped: Skip if the character has a \ before it
-size_t json_string_indexOf(char _c, EncodedJson* _enc, unsigned char _skip_escaped) {
+size_t json_string_indexOf(char _c, JsonStream* _enc, unsigned char _skip_escaped) {
   if (_enc == NULL || _enc->length == 0) {
     return -1;
   }
 
   size_t len = _enc->length;
   while (--len) {
-    if (_enc->string[len] == '\0') {
+    if (_enc->current[len] == '\0') {
       return -1;
     }
-    else if (_enc->string[len] == _c) {
-      if (_skip_escaped == 1 && len > 0 && _enc->string[len - 1] == '\\') {
+    else if (_enc->current[len] == _c) {
+      if (_skip_escaped == 1 && len > 0 && _enc->current[len - 1] == '\\') {
 	continue;
       }
 
@@ -28,8 +28,8 @@ size_t json_string_indexOf(char _c, EncodedJson* _enc, unsigned char _skip_escap
 char test_json_string_indexOf() {
   char t[] = "Hello World!\n\\\"'";
   size_t len = sizeof(t) - 1;
-  EncodedJson e;
-  e.string = t;
+  JsonStream e;
+  e.current = t;
   e.length = len;
   char t1 = json_string_indexOf(' ', &e, 0);
   char t2 = json_string_indexOf('!', &e, 0);
@@ -44,14 +44,14 @@ char test_json_string_indexOf() {
     t[t5] == '\'';
 }
 
-void json_string_ltrim(EncodedJson* _enc) {
+void json_string_ltrim(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return;
   }
 
   size_t pos = 0;
   while (_enc->length > pos) {
-    switch(_enc->string[pos]) {
+    switch(_enc->current[pos]) {
     case '\0': return;
     case ' ': case '\n': case '\r': case '\t': pos++; continue;
     }
@@ -59,33 +59,33 @@ void json_string_ltrim(EncodedJson* _enc) {
   }
 
   _enc->length -= pos;
-  _enc->string += pos;
+  _enc->current += pos;
 }
 
 char test_json_string_ltrim() {
   char t[] = " \n\t\r Hello World!\n\\\"\"";
   size_t len = sizeof(t) - 1;
-  EncodedJson e;
-  e.string = t;
+  JsonStream e;
+  e.current = t;
   e.length = len;
   json_string_ltrim(&e);
 
-  return e.string[0] == 'H';
+  return e.current[0] == 'H';
 }
 
-JsonString* json_parse_string(EncodedJson* _enc) {
+JsonString* json_parse_string(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
 
   json_string_ltrim(_enc);
 
-  if (_enc->string == NULL || _enc->string[0] != JSON_STRING) {
+  if (_enc->current == NULL || _enc->current[0] != JSON_STRING) {
     return NULL;
   }
 
   _enc->length--;
-  _enc->string++;
+  _enc->current++;
 
   size_t end = json_string_indexOf(JSON_STRING, _enc, 1);
   if (end < 0) {
@@ -99,10 +99,10 @@ JsonString* json_parse_string(EncodedJson* _enc) {
   str->value = v;
 
   while(end--) {
-    v[end] = _enc->string[end];
+    v[end] = _enc->current[end];
   }
 
-  _enc->string += end;
+  _enc->current += end;
   _enc->length -= end;
 
   return str;
@@ -117,8 +117,8 @@ void json_free_string(JsonString* _str) {
 
 char test_json_parse_string() {
   char t[] = "  \n\t\r \"Foo\\\"Bar\",  ";
-  EncodedJson e;
-  e.string = t;
+  JsonStream e;
+  e.current = t;
   e.length = sizeof(t) - 1;
   JsonString* T = json_parse_string(&e);
   char t1 = T->value[0] == 'F';
@@ -146,38 +146,38 @@ char test_json_is_digit() {
     !json_is_digit('a');
 }
 
-JsonNumber* json_parse_number(EncodedJson* _enc) {
+JsonNumber* json_parse_number(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
 
   json_string_ltrim(_enc);
 
-  if (_enc->string == NULL) {
+  if (_enc->current == NULL) {
     return NULL;
   }
 
   size_t pos = 0;
-  char negative = _enc->string[0] == '-' ? 1 : 0;
+  char negative = _enc->current[0] == '-' ? 1 : 0;
   if (negative == 1) {
     pos++;
   }
 
-  if (json_is_digit(_enc->string[pos]) == 0) {
+  if (json_is_digit(_enc->current[pos]) == 0) {
     return NULL;
   }
 
   double value = 0;
   char fraction = 0;
   while (_enc->length > pos) {
-    if (json_is_digit(_enc->string[pos]) == 1) {
+    if (json_is_digit(_enc->current[pos]) == 1) {
       value *= 10;
-      value += _enc->string[pos] - '0';
+      value += _enc->current[pos] - '0';
       if (fraction) {
 	fraction++;
       }
     }
-    else if (_enc->string[pos] == '.') {
+    else if (_enc->current[pos] == '.') {
       if (fraction != 0) {
 	return NULL;
       }
@@ -211,8 +211,8 @@ JsonNumber* json_parse_number(EncodedJson* _enc) {
 char test_json_parse_number() {
   char n1[] = " -1.023 ";
   size_t len = sizeof(n1) - 1;
-  EncodedJson e;
-  e.string = n1;
+  JsonStream e;
+  e.current = n1;
   e.length = len;
   JsonNumber* num1 = json_parse_number(&e);
   char v1 = ((float) num1->value) == ((float) -1.023);
@@ -220,7 +220,7 @@ char test_json_parse_number() {
 
   char n2[] = " 1.023 ";
   len = sizeof(n2) - 1;
-  e.string = n2;
+  e.current = n2;
   e.length = len;
   JsonNumber* num2 = json_parse_number(&e);
   char v2 = ((float) num2->value) == ((float) 1.023);
@@ -228,7 +228,7 @@ char test_json_parse_number() {
 
   char n3[] = "1023";
   len = sizeof(n3) - 1;
-  e.string = n3;
+  e.current = n3;
   e.length = len;
   JsonNumber* num3 = json_parse_number(&e);
   char v3 = ((float) num3->value) == ((float) 1023);
@@ -238,18 +238,18 @@ char test_json_parse_number() {
 }
 
 // false or true
-JsonBool* json_parse_bool(EncodedJson* _enc) {
+JsonBool* json_parse_bool(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
 
   json_string_ltrim(_enc);
 
-  if (_enc->string == NULL) {
+  if (_enc->current == NULL) {
     return NULL;
   }
 
-  char type = _enc->string[0];
+  char type = _enc->current[0];
   if (type != 't' && type != 'f') {
     return NULL;
   }
@@ -268,7 +268,7 @@ JsonBool* json_parse_bool(EncodedJson* _enc) {
   char* B = type == 't' ? T : F;
   size_t pos = type == 't' ? 4 : 5;
   while (pos--) {
-    if (_enc->string[pos] != B[pos]) {
+    if (_enc->current[pos] != B[pos]) {
       return NULL;
     }
   }
@@ -283,15 +283,15 @@ JsonBool* json_parse_bool(EncodedJson* _enc) {
 char test_json_parse_bool() {
   char b1[] = " true ";
   size_t len = sizeof(b1) - 1;
-  EncodedJson e;
-  e.string = b1;
+  JsonStream e;
+  e.current = b1;
   e.length = len;
   JsonBool* B1 = json_parse_bool(&e);
   char v1 = B1->value == 1;
 
   char b2[] = " false ";
   len = sizeof(b2) - 1;
-  e.string = b2;
+  e.current = b2;
   e.length = len;
   JsonBool* B2 = json_parse_bool(&e);
   char v2 = B2->value == 0;
@@ -300,25 +300,25 @@ char test_json_parse_bool() {
 }
 
 // null
-JsonNull* json_parse_null(EncodedJson* _enc) {
+JsonNull* json_parse_null(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
 
   json_string_ltrim(_enc);
 
-  if (_enc->string == NULL) {
+  if (_enc->current == NULL) {
     return NULL;
   }
 
-  if (_enc->string[0] != 'n' || _enc->length < 4) {
+  if (_enc->current[0] != 'n' || _enc->length < 4) {
     return NULL;
   }
 
   char N[] = "null";
   size_t pos = 4;
   while (pos--) {
-    if (_enc->string[pos] != N[pos]) {
+    if (_enc->current[pos] != N[pos]) {
       return NULL;
     }
   }
@@ -333,8 +333,8 @@ JsonNull* json_parse_null(EncodedJson* _enc) {
 char test_json_parse_null() {
   char n[] = " null ";
   size_t len = sizeof(n) - 1;
-  EncodedJson e;
-  e.string = n;
+  JsonStream e;
+  e.current = n;
   e.length = len;
   JsonNull* N = json_parse_null(&e);
   char v = N->value == 0;
@@ -343,28 +343,28 @@ char test_json_parse_null() {
 }
 
 // Object
-JsonObject* json_parse_object(EncodedJson* _enc) {
+JsonObject* json_parse_object(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
 
   json_string_ltrim(_enc);
 
-  if (_enc->string == NULL) {
+  if (_enc->current == NULL) {
     return NULL;
   }
 
-  if (_enc->string[0] != JSON_OBJECT) {
+  if (_enc->current[0] != JSON_OBJECT) {
     return NULL;
   }
 
-  _enc->string++;
+  _enc->current++;
   _enc->length--;
   json_string_ltrim(_enc);
 
   JsonObject* obj = malloc(sizeof(JsonObject));
 
-  while (_enc->string[0] != JSON_OBJECT_END) {
+  while (_enc->current[0] != JSON_OBJECT_END) {
     JsonObjectAttribute* attr = json_parse_objectAttribute(_enc);
     if (attr == NULL) {
       goto clean;
@@ -372,7 +372,7 @@ JsonObject* json_parse_object(EncodedJson* _enc) {
     json_add_objectAttribute(obj, attr);
 
     json_string_ltrim(_enc);
-    if (_enc->string[0] != ',' && _enc->string[0] != JSON_OBJECT_END) {
+    if (_enc->current[0] != ',' && _enc->current[0] != JSON_OBJECT_END) {
       goto clean;
     }
   }
@@ -414,28 +414,28 @@ void json_free_object(JsonObject* _obj) {
 
 
 // Array
-JsonArray* json_parse_array(EncodedJson* _enc) {
+JsonArray* json_parse_array(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
 
   json_string_ltrim(_enc);
 
-  if (_enc->string == NULL) {
+  if (_enc->current == NULL) {
     return NULL;
   }
 
-  if (_enc->string[0] != JSON_ARRAY) {
+  if (_enc->current[0] != JSON_ARRAY) {
     return NULL;
   }
 
-  _enc->string++;
+  _enc->current++;
   _enc->length--;
   json_string_ltrim(_enc);
 
   JsonArray* arr = malloc(sizeof(JsonArray));
 
-  while (_enc->string[0] != JSON_ARRAY_END) {
+  while (_enc->current[0] != JSON_ARRAY_END) {
     JsonArrayItem* item = json_parse_arrayItem(_enc);
     if (item == NULL) {
       goto clean;
@@ -443,7 +443,7 @@ JsonArray* json_parse_array(EncodedJson* _enc) {
     json_add_arrayItem(arr, item);
 
     json_string_ltrim(_enc);
-    if (_enc->string[0] != ',' && _enc->string[0] != JSON_ARRAY_END) {
+    if (_enc->current[0] != ',' && _enc->current[0] != JSON_ARRAY_END) {
       goto clean;
     }
   }
@@ -455,7 +455,7 @@ JsonArray* json_parse_array(EncodedJson* _enc) {
   return NULL;
 }
 
-JsonArrayItem* json_parse_arrayItem(EncodedJson* _enc) {
+JsonArrayItem* json_parse_arrayItem(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
@@ -526,14 +526,14 @@ void json_free(Json* _data) {
   free(_data);
 }
 
-Json* json_parse_value(EncodedJson* _enc) {
+Json* json_parse_value(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
 
   json_string_ltrim(_enc);
 
-  if (_enc->string == NULL) {
+  if (_enc->current == NULL) {
     return NULL;
   }
 
@@ -541,12 +541,12 @@ Json* json_parse_value(EncodedJson* _enc) {
 
   size_t pos = 0;
   while(pos < _enc->length) {
-    if (_enc->string[pos] == '-' || (_enc->string[pos] >= '0' && _enc->string[pos] >= '9')) {
+    if (_enc->current[pos] == '-' || (_enc->current[pos] >= '0' && _enc->current[pos] >= '9')) {
       data->type = JSON_NUMBER;
       break;
     }
 
-    switch(_enc->string[pos++]) {
+    switch(_enc->current[pos++]) {
     case 't': case 'f': data->type = JSON_BOOL; break;
     case '{': data->type = JSON_OBJECT; break;
     case '[': data->type = JSON_ARRAY;  break;
@@ -576,14 +576,14 @@ Json* json_parse_value(EncodedJson* _enc) {
   return data;
 }
 
-JsonObjectAttribute* json_parse_objectAttribute(EncodedJson* _enc) {
+JsonObjectAttribute* json_parse_objectAttribute(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
 
   json_string_ltrim(_enc);
 
-  if (_enc->string[0] != JSON_STRING) {
+  if (_enc->current[0] != JSON_STRING) {
     return NULL;
   }
 
@@ -594,7 +594,7 @@ JsonObjectAttribute* json_parse_objectAttribute(EncodedJson* _enc) {
     goto clean;
   }
 
-  _enc->string += attr->name->length + 1;
+  _enc->current += attr->name->length + 1;
   _enc->length -= attr->name->length + 1;
 
   // Search for :
@@ -603,7 +603,7 @@ JsonObjectAttribute* json_parse_objectAttribute(EncodedJson* _enc) {
     goto clean;
   }
 
-  _enc->string += colon_pos + 1;
+  _enc->current += colon_pos + 1;
   _enc->length -= colon_pos - 1;
 
   // Get Value
@@ -619,8 +619,12 @@ JsonObjectAttribute* json_parse_objectAttribute(EncodedJson* _enc) {
   return NULL;
 }
 
-Json* json_decode(EncodedJson* _enc)
+Json* json_decode(const char* _json, size_t _len)
 {
+  JsonStream enc;
+  enc.current = _json;
+  enc.length = _len;
+
   Json* data = json_parse_value(_enc);
 
   if (data == NULL) {
@@ -632,9 +636,9 @@ Json* json_decode(EncodedJson* _enc)
  clean:
   if (_enc->length > 100) {
     _enc->length = 100;
-    _enc->string[_enc->length] = '\0';
+    _enc->current[_enc->length] = '\0';
   }
-  printf("ERROR: Invalid syntax near: %s%s\n", _enc->string, (_enc->length == 100? "...":""));
+  printf("ERROR: Invalid syntax near: %s%s\n", _enc->current, (_enc->length == 100? "...":""));
   json_free(data);
   return NULL;
 }
