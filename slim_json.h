@@ -97,7 +97,6 @@ void json_add_arrayItem(JsonArray* _arr, JsonArrayItem* _item);
 Json* json_decode(EncodedJson* _enc);
 
 // String
-JsonString* json_string(EncodedJson* _enc);
 size_t json_string_indexOf(char _c, EncodedJson* _enc, unsigned char _skip_escaped);
 void json_string_ltrim(EncodedJson* _enc);
 

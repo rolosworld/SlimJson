@@ -73,10 +73,19 @@ char test_json_string_ltrim() {
   return e.string[0] == 'H';
 }
 
-JsonString* json_string(EncodedJson* _enc) {
+JsonString* json_parse_string(EncodedJson* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
+
+  json_string_ltrim(_enc);
+
+  if (_enc->string == NULL || _enc->string[0] != JSON_STRING) {
+    return NULL;
+  }
+
+  _enc->length--;
+  _enc->string++;
 
   size_t end = json_string_indexOf(JSON_STRING, _enc, 1);
   if (end < 0) {
@@ -97,23 +106,6 @@ JsonString* json_string(EncodedJson* _enc) {
   _enc->length -= end;
 
   return str;
-}
-
-JsonString* json_parse_string(EncodedJson* _enc) {
-  if (_enc == NULL || _enc->length == 0) {
-    return NULL;
-  }
-
-  json_string_ltrim(_enc);
-
-  if (_enc->string == NULL || _enc->string[0] != JSON_STRING) {
-    return NULL;
-  }
-
-  _enc->length--;
-  _enc->string++;
-
-  return json_string(_enc);
 }
 
 void json_free_string(JsonString* _str) {
@@ -368,12 +360,27 @@ JsonObject* json_parse_object(EncodedJson* _enc) {
 
   _enc->string++;
   _enc->length--;
+  json_string_ltrim(_enc);
 
   JsonObject* obj = malloc(sizeof(JsonObject));
   
   while (_enc->string[0] != JSON_OBJECT_END) {
-    //   
+    JsonObjectAttribute* attr = json_parse_objectAttribute(_enc);
+    if (attr == NULL) {
+      goto clean;
+    }
+    json_add_objectAttribute(obj, attr);
+
+    json_string_ltrim(_enc);
+    if (_enc->string[0] != ',' && _enc->string[0] != JSON_OBJECT_END) {
+      goto clean;
+    }
   }
+
+  return obj;
+
+ clean:
+  json_free_object(obj);
 }
 
 void json_add_objectAttribute(JsonObject* _obj, JsonObjectAttribute* _attr) {
