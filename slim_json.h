@@ -14,6 +14,11 @@
 #define JSON_ERROR(_err) do { printf("ERROR: %s", _err); } while (0)
 
 typedef struct {
+  char* string;
+  size_t length;
+} EncodedJson;
+
+typedef struct {
   char type;
   void* data;
   size_t size;
@@ -75,26 +80,26 @@ void json_free_arrayItem(JsonArrayItem* _item);
 void json_free_array(JsonArray* _arr);
 
 // Parse
-JsonString* json_parse_string(const char* _encoded, size_t* _len);
-JsonNumber* json_parse_number(const char* _encoded, size_t* _len);
-JsonBool* json_parse_bool(const char* _encoded, size_t* _len);
-JsonNull* json_parse_null(const char* _encoded, size_t* _len);
-JsonObject* json_parse_object(const char* _encoded, size_t* _len);
-JsonArray* json_parse_array(const char* _encoded, size_t* _len);
-Json* json_parse_value(const char* _encoded, size_t* _len);
-JsonObjectAttribute* json_parse_objectAttribute(const char* _encoded, size_t* _len);
+JsonString* json_parse_string(EncodedJson* _enc);
+JsonNumber* json_parse_number(EncodedJson* _enc);
+JsonBool* json_parse_bool(EncodedJson* _enc);
+JsonNull* json_parse_null(EncodedJson* _enc);
+JsonObject* json_parse_object(EncodedJson* _enc);
+JsonArray* json_parse_array(EncodedJson* _enc);
+Json* json_parse_value(EncodedJson* _enc);
+JsonObjectAttribute* json_parse_objectAttribute(EncodedJson* _enc);
 
 // Add
 void json_add_objectAttribute(JsonObject* _obj, JsonObjectAttribute* _attr);
 void json_add_arrayItem(JsonArray* _arr, JsonArrayItem* _item);
 
 // Decode
-Json* json_decode(const char* _encoded, size_t _len);
+Json* json_decode(EncodedJson* _enc);
 
 // String
-JsonString* json_string(const char* _str, size_t _len);
-size_t json_string_indexOf(char _c, const char* _str, size_t _len, unsigned char skip_escaped);
-const char* json_string_ltrim(const char* _encoded, size_t* _len);
+JsonString* json_string(EncodedJson* _enc);
+size_t json_string_indexOf(char _c, EncodedJson* _enc, unsigned char _skip_escaped);
+void json_string_ltrim(EncodedJson* _enc);
 
 // Number
 char json_is_digit(char c);

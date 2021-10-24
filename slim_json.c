@@ -3,21 +3,21 @@
 #include "slim_json.h"
 
 // skip_escaped: Skip if the character has a \ before it
-size_t json_string_indexOf(char _c, const char* _str, size_t _len, unsigned char skip_escaped) {
-  if (_len == 0) {
+size_t json_string_indexOf(char _c, EncodedJson* _enc, unsigned char _skip_escaped) {
+  if (_enc == NULL || _enc->length == 0) {
     return -1;
   }
 
-  while (--_len) {
-    if (_str[_len] == '\0') {
+  while (--_enc->length) {
+    if (_enc->string[_enc->length] == '\0') {
       return -1;
     }
-    else if (_str[_len] == _c) {
-      if (skip_escaped == 1 && _len > 0 && _str[_len - 1] == '\\') {
+    else if (_enc->string[_enc->length] == _c) {
+      if (_skip_escaped == 1 && _enc->length > 0 && _enc->string[_enc->length - 1] == '\\') {
 	continue;
       }
 
-      return _len;
+      return _enc->length;
     }
   }
 
@@ -27,11 +27,14 @@ size_t json_string_indexOf(char _c, const char* _str, size_t _len, unsigned char
 char test_json_string_indexOf() {
   char t[] = "Hello World!\n\\\"'";
   size_t len = sizeof(t) - 1;
-  char t1 = json_string_indexOf(' ', t, len, 0);
-  char t2 = json_string_indexOf('!', t, len, 0);
-  char t3 = json_string_indexOf('\n', t, len, 0);
-  char t4 = json_string_indexOf('"', t, len, 0);
-  char t5 = json_string_indexOf('\'', t, len, 1);
+  EncodedJson e;
+  e.string = t;
+  e.length = len;
+  char t1 = json_string_indexOf(' ', &e, 0);
+  char t2 = json_string_indexOf('!', &e, 0);
+  char t3 = json_string_indexOf('\n', &e, 0);
+  char t4 = json_string_indexOf('"', &e, 0);
+  char t5 = json_string_indexOf('\'', &e, 1);
 
   return t[t1] == ' ' &&
     t[t2] == '!' &&
@@ -40,69 +43,73 @@ char test_json_string_indexOf() {
     t[t5] == '\'';
 }
 
-const char* json_string_ltrim(const char* _encoded, size_t* _len) {
-  if (*_len == 0) {
-    return NULL;
+void json_string_ltrim(EncodedJson* _enc) {
+  if (_enc == NULL || _enc->length == 0) {
+    return;
   }
 
   size_t pos = 0;
-  while (*_len > pos) {
-    switch(_encoded[pos]) {
-    case '\0': return NULL;
+  while (_enc->length > pos) {
+    switch(_enc->string[pos]) {
+    case '\0': return;
     case ' ': case '\n': case '\r': case '\t': pos++; continue;
     }
     break;
   }
 
-  *_len -= pos;
-  return _encoded+pos;
+  _enc->length -= pos;
+  _enc->string += pos;
 }
 
 char test_json_string_ltrim() {
   char t[] = " \n\t\r Hello World!\n\\\"\"";
   size_t len = sizeof(t) - 1;
-  const char* t1 = json_string_ltrim(t, &len);
+  EncodedJson e;
+  e.string = t;
+  e.length = len;
+  json_string_ltrim(&e);
 
-  return t1[0] == 'H';
+  return e.string[0] == 'H';
 }
 
-JsonString* json_string(const char* _str, size_t _len) {
-  if (_len == 0) {
+JsonString* json_string(EncodedJson* _enc) {
+  if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
 
   JsonString* str = malloc(sizeof(JsonString));
-  str->length = _len;
-  char* v = malloc(sizeof(char) * _len + 1);
-  v[_len] = '\0';
+  str->length = _enc->length;
+  char* v = malloc(sizeof(char) * _enc->length + 1);
+  v[_enc->length] = '\0';
   str->value = v;
 
-  while(_len--) {
-    v[_len] = _str[_len];
+  while(_enc->length--) {
+    v[_enc->length] = _enc->string[_enc->length];
   }
 
   return str;
 }
 
-JsonString* json_parse_string(const char* _encoded, size_t* _len) {
-  if (_len == 0) {
+JsonString* json_parse_string(EncodedJson* _enc) {
+  if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
 
-  _encoded = json_string_ltrim(_encoded, _len);
+  json_string_ltrim(_enc);
 
-  if (_encoded == NULL || _encoded[0] != '"') {
+  if (_enc->string == NULL || _enc->string[0] != JSON_STRING) {
     return NULL;
   }
 
-  *_len -= 1;
-  size_t end = json_string_indexOf('"', ++_encoded, *_len, 1);
+  _enc->length--;
+  _enc->string++;
+  size_t end = json_string_indexOf(JSON_STRING, _enc, 1);
   if (end < 0) {
     return NULL;
   }
 
-  *_len -= end;
-  return json_string(_encoded, end);
+  _enc->length -= end;
+  return json_string(_enc);
 }
 
 void json_free_string(JsonString* _str) {
@@ -114,8 +121,10 @@ void json_free_string(JsonString* _str) {
 
 char test_json_parse_string() {
   char t[] = "  \n\t\r \"Foo\\\"Bar\",  ";
-  size_t len = sizeof(t) - 1;
-  JsonString* T = json_parse_string(t, &len);
+  EncodedJson e;
+  e.string = t;
+  e.length = sizeof(t) - 1;
+  JsonString* T = json_parse_string(&e);
   char t1 = T->value[0] == 'F';
   char t2 = T->value[T->length-1] == 'r';
   char t3 = T->value[T->length] == '\0';
@@ -141,38 +150,38 @@ char test_json_is_digit() {
     !json_is_digit('a');
 }
 
-JsonNumber* json_parse_number(const char* _encoded, size_t* _len) {
-  if (*_len == 0) {
+JsonNumber* json_parse_number(EncodedJson* _enc) {
+  if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
 
-  _encoded = json_string_ltrim(_encoded, _len);
+  json_string_ltrim(_enc);
 
-  if (_encoded == NULL) {
+  if (_enc->string == NULL) {
     return NULL;
   }
 
   size_t pos = 0;
-  char negative = _encoded[0] == '-' ? 1 : 0;
+  char negative = _enc->string[0] == '-' ? 1 : 0;
   if (negative == 1) {
     pos++;
   }
 
-  if (json_is_digit(_encoded[pos]) == 0) {
+  if (json_is_digit(_enc->string[pos]) == 0) {
     return NULL;
   }
 
   double value = 0;
   char fraction = 0;
-  while (*_len > pos) {
-    if (json_is_digit(_encoded[pos]) == 1) {
+  while (_enc->length > pos) {
+    if (json_is_digit(_enc->string[pos]) == 1) {
       value *= 10;
-      value += _encoded[pos] - '0';
+      value += _enc->string[pos] - '0';
       if (fraction) {
 	fraction++;
       }
     }
-    else if (_encoded[pos] == '.') {
+    else if (_enc->string[pos] == '.') {
       if (fraction != 0) {
 	return NULL;
       }
@@ -186,7 +195,7 @@ JsonNumber* json_parse_number(const char* _encoded, size_t* _len) {
     pos++;
   }
 
-  *_len -= pos;
+  _enc->length -= pos;
 
   if (fraction--) {
     while(fraction--) {
@@ -206,19 +215,26 @@ JsonNumber* json_parse_number(const char* _encoded, size_t* _len) {
 char test_json_parse_number() {
   char n1[] = " -1.023 ";
   size_t len = sizeof(n1) - 1;
-  JsonNumber* num1 = json_parse_number(n1, &len);
+  EncodedJson e;
+  e.string = n1;
+  e.length = len;
+  JsonNumber* num1 = json_parse_number(&e);
   char v1 = ((float) num1->value) == ((float) -1.023);
   free(num1);
 
   char n2[] = " 1.023 ";
   len = sizeof(n2) - 1;
-  JsonNumber* num2 = json_parse_number(n2, &len);
+  e.string = n2;
+  e.length = len;
+  JsonNumber* num2 = json_parse_number(&e);
   char v2 = ((float) num2->value) == ((float) 1.023);
   free(num2);
 
   char n3[] = "1023";
   len = sizeof(n3) - 1;
-  JsonNumber* num3 = json_parse_number(n3, &len);
+  e.string = n3;
+  e.length = len;
+  JsonNumber* num3 = json_parse_number(&e);
   char v3 = ((float) num3->value) == ((float) 1023);
   free(num3);
 
@@ -226,28 +242,28 @@ char test_json_parse_number() {
 }
 
 // false or true
-JsonBool* json_parse_bool(const char* _encoded, size_t* _len) {
-  if (*_len == 0) {
+JsonBool* json_parse_bool(EncodedJson* _enc) {
+  if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
 
-  _encoded = json_string_ltrim(_encoded, _len);
+  json_string_ltrim(_enc);
 
-  if (_encoded == NULL) {
+  if (_enc->string == NULL) {
     return NULL;
   }
 
-  char type = _encoded[0];
+  char type = _enc->string[0];
   if (type != 't' && type != 'f') {
     return NULL;
   }
 
   if (type == 't') {
-    if (*_len < 4) {
+    if (_enc->length < 4) {
       return NULL;
     }
   }
-  else if(*_len < 5) {
+  else if(_enc->length < 5) {
     return NULL;
   }
 
@@ -256,12 +272,12 @@ JsonBool* json_parse_bool(const char* _encoded, size_t* _len) {
   char* B = type == 't' ? T : F;
   size_t pos = type == 't' ? 4 : 5;
   while (pos--) {
-    if (_encoded[pos] != B[pos]) {
+    if (_enc->string[pos] != B[pos]) {
       return NULL;
     }
   }
 
-  *_len -= pos;
+  _enc->length -= pos;
 
   JsonBool* bol = malloc(sizeof(JsonBool));
   bol->value = type == 't' ? 1 : 0;
@@ -271,42 +287,47 @@ JsonBool* json_parse_bool(const char* _encoded, size_t* _len) {
 char test_json_parse_bool() {
   char b1[] = " true ";
   size_t len = sizeof(b1) - 1;
-  JsonBool* B1 = json_parse_bool(b1, &len);
+  EncodedJson e;
+  e.string = b1;
+  e.length = len;
+  JsonBool* B1 = json_parse_bool(&e);
   char v1 = B1->value == 1;
 
   char b2[] = " false ";
   len = sizeof(b2) - 1;
-  JsonBool* B2 = json_parse_bool(b2, &len);
+  e.string = b2;
+  e.length = len;
+  JsonBool* B2 = json_parse_bool(&e);
   char v2 = B2->value == 0;
 
   return v1 && v2;
 }
 
 // null
-JsonNull* json_parse_null(const char* _encoded, size_t* _len) {
-  if (*_len == 0) {
+JsonNull* json_parse_null(EncodedJson* _enc) {
+  if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
 
-  _encoded = json_string_ltrim(_encoded, _len);
+  json_string_ltrim(_enc);
 
-  if (_encoded == NULL) {
+  if (_enc->string == NULL) {
     return NULL;
   }
 
-  if (_encoded[0] != 'n' || *_len < 4) {
+  if (_enc->string[0] != 'n' || _enc->length < 4) {
     return NULL;
   }
 
   char N[] = "null";
   size_t pos = 4;
   while (pos--) {
-    if (_encoded[pos] != N[pos]) {
+    if (_enc->string[pos] != N[pos]) {
       return NULL;
     }
   }
 
-  *_len -= pos;
+  _enc->length -= pos;
 
   JsonNull* nul = malloc(sizeof(JsonNull));
   nul->value = 0;
@@ -316,30 +337,39 @@ JsonNull* json_parse_null(const char* _encoded, size_t* _len) {
 char test_json_parse_null() {
   char n[] = " null ";
   size_t len = sizeof(n) - 1;
-  JsonNull* N = json_parse_null(n, &len);
+  EncodedJson e;
+  e.string = n;
+  e.length = len;
+  JsonNull* N = json_parse_null(&e);
   char v = N->value == 0;
 
   return v;
 }
 
 // Object
-JsonObject* json_parse_object(const char* _encoded, size_t* _len) {
-  if (*_len == 0) {
+JsonObject* json_parse_object(EncodedJson* _enc) {
+  if (_enc->length == 0) {
     return NULL;
   }
 
-  _encoded = json_string_ltrim(_encoded, _len);
+  json_string_ltrim(_enc);
 
-  if (_encoded == NULL) {
+  if (_enc->string == NULL) {
     return NULL;
   }
 
-  if (_encoded[0] != '{') {
+  if (_enc->string[0] != '{') {
     return NULL;
   }
+
+  _enc->string++;
+  _enc->length--;
 
   JsonObject* obj = malloc(sizeof(JsonObject));
-
+  
+  while (_enc->string[0] != JSON_OBJECT_END) {
+    //   
+  }
 }
 
 void json_add_objectAttribute(JsonObject* _obj, JsonObjectAttribute* _attr) {
@@ -372,7 +402,7 @@ void json_free_object(JsonObject* _obj) {
 
 
 // Array
-JsonArray* json_parse_array(const char* _encoded, size_t* _len) {
+JsonArray* json_parse_array(EncodedJson* _enc) {
   return NULL;
 }
 
@@ -425,27 +455,27 @@ void json_free(Json* _data) {
   free(_data);
 }
 
-Json* json_parse_value(const char* _encoded, size_t* _len) {
-  if (*_len == 0) {
+Json* json_parse_value(EncodedJson* _enc) {
+  if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
 
-  _encoded = json_string_ltrim(_encoded, _len);
+  json_string_ltrim(_enc);
 
-  if (_encoded == NULL) {
+  if (_enc->string == NULL) {
     return NULL;
   }
 
   Json* data = malloc(sizeof(Json));
 
   size_t pos = 0;
-  while(pos < *_len) {
-    if (_encoded[pos] == '-' || (_encoded[pos] >= '0' && _encoded[pos] >= '9')) {
+  while(pos < _enc->length) {
+    if (_enc->string[pos] == '-' || (_enc->string[pos] >= '0' && _enc->string[pos] >= '9')) {
       data->type = JSON_NUMBER;
       break;
     }
 
-    switch(_encoded[pos++]) {
+    switch(_enc->string[pos++]) {
     case 't': case 'f': data->type = JSON_BOOL; break;
     case '{': data->type = JSON_OBJECT; break;
     case '[': data->type = JSON_ARRAY;  break;
@@ -455,15 +485,15 @@ Json* json_parse_value(const char* _encoded, size_t* _len) {
     }
   }
 
-  *_len -= pos;
+  _enc->length -= pos;
 
   switch(data->type) {
-  case JSON_OBJECT: data->data = json_parse_object(_encoded, _len); break;
-  case JSON_ARRAY: data->data = json_parse_array(_encoded, _len); break;
-  case JSON_NUMBER: data->data = json_parse_number(_encoded, _len); break;
-  case JSON_STRING: data->data = json_parse_string(_encoded, _len); break;
-  case JSON_BOOL: data->data = json_parse_bool(_encoded, _len); break;
-  case JSON_NULL: data->data = json_parse_null(_encoded, _len); break;
+  case JSON_OBJECT: data->data = json_parse_object(_enc); break;
+  case JSON_ARRAY: data->data = json_parse_array(_enc); break;
+  case JSON_NUMBER: data->data = json_parse_number(_enc); break;
+  case JSON_STRING: data->data = json_parse_string(_enc); break;
+  case JSON_BOOL: data->data = json_parse_bool(_enc); break;
+  case JSON_NULL: data->data = json_parse_null(_enc); break;
   default: return NULL;
   }
 
@@ -475,38 +505,38 @@ Json* json_parse_value(const char* _encoded, size_t* _len) {
   return data;
 }
 
-JsonObjectAttribute* json_parse_objectAttribute(const char* _encoded, size_t* _len) {
-  if (*_len == 0) {
+JsonObjectAttribute* json_parse_objectAttribute(EncodedJson* _enc) {
+  if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
 
-  if (_encoded[0] != '"') {
+  if (_enc->string[0] != JSON_STRING) {
     JSON_ERROR("Invalid syntax, expecting double quote");
     return NULL;
   }
 
   // Get key
   JsonObjectAttribute* attr = malloc(sizeof(JsonObjectAttribute));
-  attr->name = json_parse_string(_encoded, _len);
+  attr->name = json_parse_string(_enc);
   if (attr->name == NULL) {
     JSON_ERROR("Invalid syntax, expecting the object attribute name");
     goto clean;
   }
 
-  _encoded += attr->name->length + 1;
-  *_len -= attr->name->length + 1;
+  _enc->string += attr->name->length + 1;
+  _enc->length -= attr->name->length + 1;
 
   // Search for :
-  size_t colon_pos = json_string_indexOf(':', _encoded, *_len, 0);
+  size_t colon_pos = json_string_indexOf(':', _enc, 0);
   if (colon_pos < 0) {
     JSON_ERROR("Invalid syntax, expecting an colon");
     goto clean;
   }
 
-  _encoded += colon_pos + 1;
-  *_len -= colon_pos - 1;
+  _enc->string += colon_pos + 1;
+  _enc->length -= colon_pos - 1;
 
-  attr->data = json_parse_value(_encoded, _len);
+  attr->data = json_parse_value(_enc);
   if (attr->data == NULL) {
     JSON_ERROR("Invalid syntax, expecting the object value");
     goto clean;
@@ -519,7 +549,7 @@ JsonObjectAttribute* json_parse_objectAttribute(const char* _encoded, size_t* _l
   return NULL;
 }
 
-Json* json_decode(const char* _encoded, size_t _len)
+Json* json_decode(EncodedJson* _enc)
 {
   Json* data = malloc(sizeof(Json));
   JsonObjectAttribute* attr = NULL;
@@ -530,7 +560,7 @@ Json* json_decode(const char* _encoded, size_t _len)
 
   char c;
   while (pos++) {
-    c = _encoded[pos];
+    c = _enc->string[pos];
 
     if (c == '\0') {
       JSON_ERROR("Invalid syntax, unexpected end");
@@ -582,7 +612,8 @@ Json* json_decode(const char* _encoded, size_t _len)
     Json* decoded;
     switch(c) {
     case JSON_OBJECT:
-      decoded = json_decode(_encoded, _len - pos);
+      _enc->length -= pos;
+      decoded = json_decode(_enc);
       if (decoded == NULL) {
 	goto clean;
       }
@@ -600,7 +631,8 @@ Json* json_decode(const char* _encoded, size_t _len)
       continue;
 
     case JSON_ARRAY:
-      decoded = json_decode(_encoded, _len - pos);
+      _enc->length -= pos;
+      decoded = json_decode(_enc);
       if (decoded == NULL) {
 	goto clean;
       }
@@ -619,8 +651,8 @@ Json* json_decode(const char* _encoded, size_t _len)
     }
 
     if (data->type == JSON_OBJECT) {
-      _len -= pos;
-      json_parse_objectAttribute(_encoded, &_len);
+      _enc->length -= pos;
+      json_parse_objectAttribute(_enc);
 
       if (c != '"') {
 	JSON_ERROR("Invalid syntax, expecting double quote");
@@ -629,8 +661,8 @@ Json* json_decode(const char* _encoded, size_t _len)
 
       // Get key
       attr = malloc(sizeof(JsonObjectAttribute));
-      _len -= pos;
-      attr->name = json_parse_string(_encoded, &_len);
+      _enc->length -= pos;
+      attr->name = json_parse_string(_enc);
 
       if (attr->name->length == 0) {
 	JSON_ERROR("Invalid syntax, expecting a hash key");
@@ -640,8 +672,8 @@ Json* json_decode(const char* _encoded, size_t _len)
       pos += attr->name->length;
 
       // Search for :
-      _len -= pos;
-      size_t colon_pos = json_string_indexOf(':', _encoded, _len, 0);
+      _enc->length -= pos;
+      size_t colon_pos = json_string_indexOf(':', _enc, 0);
       if (colon_pos < 0) {
 	JSON_ERROR("Invalid syntax, expecting an colon");
 	goto clean;
