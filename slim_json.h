@@ -11,11 +11,14 @@
 #define JSON_OBJECT_END '}'
 #define JSON_ARRAY_END  ']'
 
-#define JSON_ERROR(_err) do { printf("ERROR: %s", _err); } while (0)
-
 typedef struct {
   char* string;
   size_t length;
+  // TODO:
+  // Stream Position
+  // size_t pos;
+  // Error enum
+  // JsonError error;
 } EncodedJson;
 
 typedef struct {

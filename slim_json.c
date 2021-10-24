@@ -467,7 +467,6 @@ JsonArrayItem* json_parse_arrayItem(EncodedJson* _enc) {
   // Get Value
   item->data = json_parse_value(_enc);
   if (item->data == NULL) {
-    JSON_ERROR("Invalid syntax, expecting the array value");
     goto clean;
   }
 
@@ -585,7 +584,6 @@ JsonObjectAttribute* json_parse_objectAttribute(EncodedJson* _enc) {
   json_string_ltrim(_enc);
 
   if (_enc->string[0] != JSON_STRING) {
-    JSON_ERROR("Invalid syntax, expecting double quote");
     return NULL;
   }
 
@@ -593,7 +591,6 @@ JsonObjectAttribute* json_parse_objectAttribute(EncodedJson* _enc) {
   JsonObjectAttribute* attr = malloc(sizeof(JsonObjectAttribute));
   attr->name = json_parse_string(_enc);
   if (attr->name == NULL) {
-    JSON_ERROR("Invalid syntax, expecting the object attribute name");
     goto clean;
   }
 
@@ -603,7 +600,6 @@ JsonObjectAttribute* json_parse_objectAttribute(EncodedJson* _enc) {
   // Search for :
   size_t colon_pos = json_string_indexOf(':', _enc, 0);
   if (colon_pos < 0) {
-    JSON_ERROR("Invalid syntax, expecting an colon");
     goto clean;
   }
 
@@ -613,7 +609,6 @@ JsonObjectAttribute* json_parse_objectAttribute(EncodedJson* _enc) {
   // Get Value
   attr->data = json_parse_value(_enc);
   if (attr->data == NULL) {
-    JSON_ERROR("Invalid syntax, expecting the object value");
     goto clean;
   }
 
@@ -626,161 +621,22 @@ JsonObjectAttribute* json_parse_objectAttribute(EncodedJson* _enc) {
 
 Json* json_decode(EncodedJson* _enc)
 {
-  Json* data = malloc(sizeof(Json));
-  JsonObjectAttribute* attr = NULL;
-  size_t pos = 0;
+  Json* data = json_parse_value(_enc);
 
-  data->type = -1;
-  char error = 1;
-
-  char c;
-  while (pos++) {
-    c = _enc->string[pos];
-
-    if (c == '\0') {
-      JSON_ERROR("Invalid syntax, unexpected end");
-      goto clean;
-    }
-
-
-    // Skip whitespaces
-    switch (c) {
-    case ' ':
-    case '\n':
-    case '\t':
-    case '\r':
-      continue;
-    }
-
-    if (data->type < 0) {
-      switch (c) {
-      case JSON_OBJECT:
-	data->type = JSON_OBJECT;
-	data->data = malloc(sizeof(JsonObject));
-      case JSON_ARRAY:
-	data->type = JSON_ARRAY;
-	data->data = malloc(sizeof(JsonArray));
-	continue;
-      }
-
-      JSON_ERROR("Invalid syntax, expecting an object or an array");
-      goto clean;
-    }
-
-    if (c == JSON_OBJECT_END) {
-      if (data->type != JSON_OBJECT) {
-	JSON_ERROR("Invalid syntax, unexpected object end");
-	goto clean;
-      }
-      break;
-    }
-
-    if (c == JSON_ARRAY_END) {
-      if (data->type != JSON_ARRAY) {
-	JSON_ERROR("Invalid syntax, unexpected object end");
-	goto clean;
-      }
-      break;
-    }
-
-    // c can be an array or an object at this point... in which case we need to decode!
-    Json* decoded;
-    switch(c) {
-    case JSON_OBJECT:
-      _enc->length -= pos;
-      decoded = json_decode(_enc);
-      if (decoded == NULL) {
-	goto clean;
-      }
-
-      if (attr == NULL) {
-	data->data = decoded->data;
-	decoded->data = NULL;
-	free(decoded);
-	return data;
-      }
-
-      attr->data = decoded->data;
-      json_add_objectAttribute(data->data, attr);
-      attr = NULL;
-      continue;
-
-    case JSON_ARRAY:
-      _enc->length -= pos;
-      decoded = json_decode(_enc);
-      if (decoded == NULL) {
-	goto clean;
-      }
-
-      if (attr == NULL) {
-	data->data = decoded->data;
-	decoded->data = NULL;
-	free(decoded);
-	return data;
-      }
-
-      attr->data = decoded->data;
-      json_add_objectAttribute(data->data, attr);
-      attr = NULL;
-      continue;
-    }
-
-    if (data->type == JSON_OBJECT) {
-      _enc->length -= pos;
-      json_parse_objectAttribute(_enc);
-
-      if (c != '"') {
-	JSON_ERROR("Invalid syntax, expecting double quote");
-	goto clean;
-      }
-
-      // Get key
-      attr = malloc(sizeof(JsonObjectAttribute));
-      _enc->length -= pos;
-      attr->name = json_parse_string(_enc);
-
-      if (attr->name->length == 0) {
-	JSON_ERROR("Invalid syntax, expecting a hash key");
-	goto clean;
-      }
-
-      pos += attr->name->length;
-
-      // Search for :
-      _enc->length -= pos;
-      size_t colon_pos = json_string_indexOf(':', _enc, 0);
-      if (colon_pos < 0) {
-	JSON_ERROR("Invalid syntax, expecting an colon");
-	goto clean;
-      }
-
-      continue;
-    }
-
-    // Get value
-    if (c != '-' || (c < '0' || c > '9')) {
-      JSON_ERROR("Invalid syntax, expecting a number");
-      goto clean;
-    }
-
-    // Search for , and continue
-    // Search for object or array end
-
-  }
-
-  error = 0;
-
- clean:
-  if (error == 1) {
-    json_free(data);
-    if (attr != NULL) {
-      json_free_objectAttribute(attr);
-    }
-
-    return NULL;
+  if (data == NULL) {
+    goto clean;
   }
 
   return data;
+
+ clean:
+  if (_enc->length > 100) {
+    _enc->length = 100;
+    _enc->string[_enc->length] = '\0';
+  }
+  printf("ERROR: Invalid syntax near: %s%s\n", _enc->string, (_enc->length == 100? "...":""));
+  json_free(data);
+  return NULL;
 }
 
 int main(int argc, const char* argv[])
