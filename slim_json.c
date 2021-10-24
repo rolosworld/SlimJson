@@ -354,7 +354,7 @@ JsonObject* json_parse_object(EncodedJson* _enc) {
     return NULL;
   }
 
-  if (_enc->string[0] != '{') {
+  if (_enc->string[0] != JSON_OBJECT) {
     return NULL;
   }
 
@@ -363,7 +363,7 @@ JsonObject* json_parse_object(EncodedJson* _enc) {
   json_string_ltrim(_enc);
 
   JsonObject* obj = malloc(sizeof(JsonObject));
-  
+
   while (_enc->string[0] != JSON_OBJECT_END) {
     JsonObjectAttribute* attr = json_parse_objectAttribute(_enc);
     if (attr == NULL) {
@@ -414,7 +414,43 @@ void json_free_object(JsonObject* _obj) {
 
 // Array
 JsonArray* json_parse_array(EncodedJson* _enc) {
-  return NULL;
+  if (_enc->length == 0) {
+    return NULL;
+  }
+
+  json_string_ltrim(_enc);
+
+  if (_enc->string == NULL) {
+    return NULL;
+  }
+
+  if (_enc->string[0] != JSON_ARRAY) {
+    return NULL;
+  }
+
+  _enc->string++;
+  _enc->length--;
+  json_string_ltrim(_enc);
+
+  JsonArray* arr = malloc(sizeof(JsonArray));
+
+  while (_enc->string[0] != JSON_ARRAY_END) {
+    JsonArrayItem* item = json_parse_arrayItem(_enc);
+    if (item == NULL) {
+      goto clean;
+    }
+    json_add_arrayItem(arr, attr);
+
+    json_string_ltrim(_enc);
+    if (_enc->string[0] != ',' && _enc->string[0] != JSON_ARRAY_END) {
+      goto clean;
+    }
+  }
+
+  return arr;
+
+ clean:
+  json_free_array(arr);
 }
 
 void json_add_arrayItem(JsonArray* _arr, JsonArrayItem* _item) {
@@ -547,6 +583,7 @@ JsonObjectAttribute* json_parse_objectAttribute(EncodedJson* _enc) {
   _enc->string += colon_pos + 1;
   _enc->length -= colon_pos - 1;
 
+  // Get Value
   attr->data = json_parse_value(_enc);
   if (attr->data == NULL) {
     JSON_ERROR("Invalid syntax, expecting the object value");
