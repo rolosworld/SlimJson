@@ -344,7 +344,7 @@ char test_json_parse_null() {
 
 // Object
 JsonObject* json_parse_object(EncodedJson* _enc) {
-  if (_enc->length == 0) {
+  if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
 
@@ -414,7 +414,7 @@ void json_free_object(JsonObject* _obj) {
 
 // Array
 JsonArray* json_parse_array(EncodedJson* _enc) {
-  if (_enc->length == 0) {
+  if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
 
@@ -439,7 +439,7 @@ JsonArray* json_parse_array(EncodedJson* _enc) {
     if (item == NULL) {
       goto clean;
     }
-    json_add_arrayItem(arr, attr);
+    json_add_arrayItem(arr, item);
 
     json_string_ltrim(_enc);
     if (_enc->string[0] != ',' && _enc->string[0] != JSON_ARRAY_END) {
@@ -451,6 +451,29 @@ JsonArray* json_parse_array(EncodedJson* _enc) {
 
  clean:
   json_free_array(arr);
+}
+
+JsonArrayItem* json_parse_arrayItem(EncodedJson* _enc) {
+  if (_enc == NULL || _enc->length == 0) {
+    return NULL;
+  }
+
+  json_string_ltrim(_enc);
+
+  JsonArrayItem*  item = malloc(sizeof(JsonArrayItem));
+
+  // Get Value
+  item->data = json_parse_value(_enc);
+  if (item->data == NULL) {
+    JSON_ERROR("Invalid syntax, expecting the array value");
+    goto clean;
+  }
+
+  return item;
+
+ clean:
+  json_free_arrayItem(item);
+  return NULL;
 }
 
 void json_add_arrayItem(JsonArray* _arr, JsonArrayItem* _item) {
@@ -556,6 +579,8 @@ JsonObjectAttribute* json_parse_objectAttribute(EncodedJson* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
+
+  json_string_ltrim(_enc);
 
   if (_enc->string[0] != JSON_STRING) {
     JSON_ERROR("Invalid syntax, expecting double quote");

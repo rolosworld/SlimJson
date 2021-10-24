@@ -88,6 +88,7 @@ JsonObject* json_parse_object(EncodedJson* _enc);
 JsonArray* json_parse_array(EncodedJson* _enc);
 Json* json_parse_value(EncodedJson* _enc);
 JsonObjectAttribute* json_parse_objectAttribute(EncodedJson* _enc);
+JsonArrayItem* json_parse_arrayItem(EncodedJson* _enc);
 
 // Add
 void json_add_objectAttribute(JsonObject* _obj, JsonObjectAttribute* _attr);
