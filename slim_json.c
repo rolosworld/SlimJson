@@ -381,6 +381,7 @@ JsonObject* json_parse_object(EncodedJson* _enc) {
 
  clean:
   json_free_object(obj);
+  return NULL;
 }
 
 void json_add_objectAttribute(JsonObject* _obj, JsonObjectAttribute* _attr) {
@@ -451,6 +452,7 @@ JsonArray* json_parse_array(EncodedJson* _enc) {
 
  clean:
   json_free_array(arr);
+  return NULL;
 }
 
 JsonArrayItem* json_parse_arrayItem(EncodedJson* _enc) {
