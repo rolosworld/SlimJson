@@ -25,14 +25,27 @@ SOFTWARE.
 */
 #include "slim_json.h"
 
-void json_move_stream(JsonStream* _s, size_t _amount) {
+static JsonStream* json_stream(const char* _json, size_t _len) {
+  JsonStream* enc = malloc(sizeof(JsonStream));
+  enc->current = _json;
+  enc->start = _json;
+  enc->length = _len;
+  enc->position = 0;
+  return enc;
+}
+
+static char json_is_digit(char c) {
+  return c >= '0' && c <= '9';
+}
+
+static void json_move_stream(JsonStream* _s, size_t _amount) {
   _s->position += _amount;
   _s->current += _amount;
   _s->length -= _amount;
 }
 
 // skip_escaped: Skip if the character has a \ before it
-ssize_t json_string_indexOf(char _c, JsonStream* _enc, unsigned char _skip_escaped) {
+static ssize_t json_string_indexOf(char _c, JsonStream* _enc, unsigned char _skip_escaped) {
   if (_enc == NULL || _enc->length == 0) {
     return -1;
   }
@@ -53,7 +66,7 @@ ssize_t json_string_indexOf(char _c, JsonStream* _enc, unsigned char _skip_escap
   return -1;
 }
 
-void json_string_ltrim(JsonStream* _enc) {
+static void json_string_ltrim(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return;
   }
@@ -75,7 +88,7 @@ void json_string_ltrim(JsonStream* _enc) {
   json_move_stream(_enc, pos);
 }
 
-char json_equal_strings(const char* _strA, size_t _lenA, const char* _strB, size_t _lenB) {
+static char json_equal_strings(const char* _strA, size_t _lenA, const char* _strB, size_t _lenB) {
   if (_strA == NULL || _strB == NULL) {
     return 0;
   }
@@ -133,10 +146,6 @@ void json_free_string(JsonString* _str) {
 
   free(_str->value);
   free(_str);
-}
-
-char json_is_digit(char c) {
-  return c >= '0' && c <= '9';
 }
 
 JsonNumber* json_parse_number(JsonStream* _enc) {
@@ -660,13 +669,4 @@ void json_print_error(JsonValue* _e) {
 
   JsonStream* s = (JsonStream*)_e->data;
   printf("ERROR: Invalid syntax at offset( %ld ): %.100s\n", s->position, s->current);
-}
-
-JsonStream* json_stream(const char* _json, size_t _len) {
-  JsonStream* enc = malloc(sizeof(JsonStream));
-  enc->current = _json;
-  enc->start = _json;
-  enc->length = _len;
-  enc->position = 0;
-  return enc;
 }

@@ -125,22 +125,11 @@ void json_add_arrayItem(JsonArray* _arr, JsonArrayItem* _item);
 // Decode
 JsonValue* json_decode(const char* _json, size_t _len);
 
-// String
-ssize_t json_string_indexOf(char _c, JsonStream* _enc, unsigned char _skip_escaped);
-void json_string_ltrim(JsonStream* _enc);
-char json_equal_strings(const char* _strA, size_t _lenA, const char* _strB, size_t _lenB);
-
-// Number
-char json_is_digit(char c);
-
-// Stream
-JsonStream* json_stream(const char* _json, size_t _len);
-
 // Error
 void json_print_error(JsonValue* _e);
 
 // Get
-JsonObjectAttribute* json_get_objectAttribute(JsonObject* _obj, const char* _name, size_t _len); 
-JsonArrayItem* json_get_arrayItem(JsonArray* _arr, size_t _index); 
+JsonObjectAttribute* json_get_objectAttribute(JsonObject* _obj, const char* _name, size_t _len);
+JsonArrayItem* json_get_arrayItem(JsonArray* _arr, size_t _index);
 
 #endif /* __SLIM_JSON_H__ */
