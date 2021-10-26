@@ -1,47 +1,56 @@
-#include <stdio.h>
-#include <stdlib.h>
+/*
+
+MIT License
+
+Copyright (c) 2021 Rolando Gonzalez-Chevere
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+*/
 #include "slim_json.h"
 
+void json_move_stream(JsonStream* _s, size_t _amount) {
+  _s->position += _amount;
+  _s->current += _amount;
+  _s->length -= _amount;
+}
+
 // skip_escaped: Skip if the character has a \ before it
-size_t json_string_indexOf(char _c, JsonStream* _enc, unsigned char _skip_escaped) {
+ssize_t json_string_indexOf(char _c, JsonStream* _enc, unsigned char _skip_escaped) {
   if (_enc == NULL || _enc->length == 0) {
     return -1;
   }
 
-  size_t len = _enc->length;
-  while (--len) {
-    if (_enc->current[len] == '\0') {
+  for (int i = 0; i < _enc->length; i++) {
+    if (_enc->current[i] == '\0') {
       return -1;
     }
-    else if (_enc->current[len] == _c) {
-      if (_skip_escaped == 1 && len > 0 && _enc->current[len - 1] == '\\') {
+    else if (_enc->current[i] == _c) {
+      if (_skip_escaped == 1 && i > 0 && _enc->current[i - 1] == '\\') {
 	continue;
       }
 
-      return len;
+      return i;
     }
   }
 
   return -1;
-}
-
-char test_json_string_indexOf() {
-  char t[] = "Hello World!\n\\\"'";
-  size_t len = sizeof(t) - 1;
-  JsonStream e;
-  e.current = t;
-  e.length = len;
-  char t1 = json_string_indexOf(' ', &e, 0);
-  char t2 = json_string_indexOf('!', &e, 0);
-  char t3 = json_string_indexOf('\n', &e, 0);
-  char t4 = json_string_indexOf('"', &e, 0);
-  char t5 = json_string_indexOf('\'', &e, 1);
-
-  return t[t1] == ' ' &&
-    t[t2] == '!' &&
-    t[t3] == '\n' &&
-    t[t4] == '"' &&
-    t[t5] == '\'';
 }
 
 void json_string_ltrim(JsonStream* _enc) {
@@ -53,24 +62,35 @@ void json_string_ltrim(JsonStream* _enc) {
   while (_enc->length > pos) {
     switch(_enc->current[pos]) {
     case '\0': return;
-    case ' ': case '\n': case '\r': case '\t': pos++; continue;
+    case ' ':
+    case '\n':
+    case '\r':
+    case '\t':
+      pos++;
+      continue;
     }
     break;
   }
 
-  _enc->length -= pos;
-  _enc->current += pos;
+  json_move_stream(_enc, pos);
 }
 
-char test_json_string_ltrim() {
-  char t[] = " \n\t\r Hello World!\n\\\"\"";
-  size_t len = sizeof(t) - 1;
-  JsonStream e;
-  e.current = t;
-  e.length = len;
-  json_string_ltrim(&e);
+char json_equal_strings(const char* _strA, size_t _lenA, const char* _strB, size_t _lenB) {
+  if (_strA == NULL || _strB == NULL) {
+    return 0;
+  }
 
-  return e.current[0] == 'H';
+  if (_lenA != _lenB) {
+    return 0;
+  }
+
+  while (_lenA--) {
+    if (*(_strA++) != *(_strB++)) {
+      return 0;
+    }
+  }
+
+  return 1;
 }
 
 JsonString* json_parse_string(JsonStream* _enc) {
@@ -84,10 +104,9 @@ JsonString* json_parse_string(JsonStream* _enc) {
     return NULL;
   }
 
-  _enc->length--;
-  _enc->current++;
+  json_move_stream(_enc, 1);
 
-  size_t end = json_string_indexOf(JSON_STRING, _enc, 1);
+  ssize_t end = json_string_indexOf(JSON_STRING, _enc, 1);
   if (end < 0) {
     return NULL;
   }
@@ -102,48 +121,22 @@ JsonString* json_parse_string(JsonStream* _enc) {
     v[end] = _enc->current[end];
   }
 
-  _enc->current += end;
-  _enc->length -= end;
+  json_move_stream(_enc, str->length + 1);
 
   return str;
 }
 
 void json_free_string(JsonString* _str) {
-  if (_str->value != NULL) {
-    free(_str->value);
+  if (_str->value == NULL) {
+    return;
   }
-  free(_str);
-}
 
-char test_json_parse_string() {
-  char t[] = "  \n\t\r \"Foo\\\"Bar\",  ";
-  JsonStream e;
-  e.current = t;
-  e.length = sizeof(t) - 1;
-  JsonString* T = json_parse_string(&e);
-  char t1 = T->value[0] == 'F';
-  char t2 = T->value[T->length-1] == 'r';
-  char t3 = T->value[T->length] == '\0';
-  json_free_string(T);
-  return t1 && t2 && t3;
+  free(_str->value);
+  free(_str);
 }
 
 char json_is_digit(char c) {
   return c >= '0' && c <= '9';
-}
-
-char test_json_is_digit() {
-  return json_is_digit('0') &&
-    json_is_digit('1') &&
-    json_is_digit('2') &&
-    json_is_digit('3') &&
-    json_is_digit('4') &&
-    json_is_digit('5') &&
-    json_is_digit('6') &&
-    json_is_digit('7') &&
-    json_is_digit('8') &&
-    json_is_digit('9') &&
-    !json_is_digit('a');
 }
 
 JsonNumber* json_parse_number(JsonStream* _enc) {
@@ -191,7 +184,7 @@ JsonNumber* json_parse_number(JsonStream* _enc) {
     pos++;
   }
 
-  _enc->length -= pos;
+  json_move_stream(_enc, pos);
 
   if (fraction--) {
     while(fraction--) {
@@ -206,35 +199,6 @@ JsonNumber* json_parse_number(JsonStream* _enc) {
   JsonNumber* num = malloc(sizeof(JsonNumber));
   num->value = value;
   return num;
-}
-
-char test_json_parse_number() {
-  char n1[] = " -1.023 ";
-  size_t len = sizeof(n1) - 1;
-  JsonStream e;
-  e.current = n1;
-  e.length = len;
-  JsonNumber* num1 = json_parse_number(&e);
-  char v1 = ((float) num1->value) == ((float) -1.023);
-  free(num1);
-
-  char n2[] = " 1.023 ";
-  len = sizeof(n2) - 1;
-  e.current = n2;
-  e.length = len;
-  JsonNumber* num2 = json_parse_number(&e);
-  char v2 = ((float) num2->value) == ((float) 1.023);
-  free(num2);
-
-  char n3[] = "1023";
-  len = sizeof(n3) - 1;
-  e.current = n3;
-  e.length = len;
-  JsonNumber* num3 = json_parse_number(&e);
-  char v3 = ((float) num3->value) == ((float) 1023);
-  free(num3);
-
-  return v1 && v2 && v3;
 }
 
 // false or true
@@ -267,36 +231,15 @@ JsonBool* json_parse_bool(JsonStream* _enc) {
   char F[] = "false";
   char* B = type == 't' ? T : F;
   size_t pos = type == 't' ? 4 : 5;
-  while (pos--) {
-    if (_enc->current[pos] != B[pos]) {
+  for (int i = 0; i < pos; i++, _enc->length--) {
+    if (_enc->current[i] != B[i]) {
       return NULL;
     }
   }
 
-  _enc->length -= pos;
-
   JsonBool* bol = malloc(sizeof(JsonBool));
   bol->value = type == 't' ? 1 : 0;
   return bol;
-}
-
-char test_json_parse_bool() {
-  char b1[] = " true ";
-  size_t len = sizeof(b1) - 1;
-  JsonStream e;
-  e.current = b1;
-  e.length = len;
-  JsonBool* B1 = json_parse_bool(&e);
-  char v1 = B1->value == 1;
-
-  char b2[] = " false ";
-  len = sizeof(b2) - 1;
-  e.current = b2;
-  e.length = len;
-  JsonBool* B2 = json_parse_bool(&e);
-  char v2 = B2->value == 0;
-
-  return v1 && v2;
 }
 
 // null
@@ -323,23 +266,11 @@ JsonNull* json_parse_null(JsonStream* _enc) {
     }
   }
 
-  _enc->length -= pos;
+  json_move_stream(_enc, 1);
 
   JsonNull* nul = malloc(sizeof(JsonNull));
   nul->value = 0;
   return nul;
-}
-
-char test_json_parse_null() {
-  char n[] = " null ";
-  size_t len = sizeof(n) - 1;
-  JsonStream e;
-  e.current = n;
-  e.length = len;
-  JsonNull* N = json_parse_null(&e);
-  char v = N->value == 0;
-
-  return v;
 }
 
 // Object
@@ -358,11 +289,12 @@ JsonObject* json_parse_object(JsonStream* _enc) {
     return NULL;
   }
 
-  _enc->current++;
-  _enc->length--;
+  json_move_stream(_enc, 1);
   json_string_ltrim(_enc);
 
   JsonObject* obj = malloc(sizeof(JsonObject));
+  obj->first = NULL;
+  obj->last = NULL;
 
   while (_enc->current[0] != JSON_OBJECT_END) {
     JsonObjectAttribute* attr = json_parse_objectAttribute(_enc);
@@ -372,10 +304,15 @@ JsonObject* json_parse_object(JsonStream* _enc) {
     json_add_objectAttribute(obj, attr);
 
     json_string_ltrim(_enc);
-    if (_enc->current[0] != ',' && _enc->current[0] != JSON_OBJECT_END) {
+    if (_enc->current[0] == ',') {
+      json_move_stream(_enc, 1);
+    }
+    else if (_enc->current[0] != JSON_OBJECT_END) {
       goto clean;
     }
   }
+
+  json_move_stream(_enc, 1);
 
   return obj;
 
@@ -395,12 +332,37 @@ void json_add_objectAttribute(JsonObject* _obj, JsonObjectAttribute* _attr) {
   _obj->last = _attr;
 }
 
+JsonObjectAttribute* json_get_objectAttribute(JsonObject* _obj, const char* _name, size_t _len) {
+  if (_obj == NULL) {
+    return NULL;
+  }
+
+  JsonObjectAttribute* attr = _obj->first;
+  while (attr != NULL) {
+    if (json_equal_strings(attr->name->value, attr->name->length, _name, _len)) {
+      return attr;
+    }
+    attr = attr->next;
+  }
+
+  return NULL;
+}
+
 void json_free_objectAttribute(JsonObjectAttribute* _attr) {
+  if (_attr == NULL) {
+    return;
+  }
+
   json_free_string(_attr->name);
   json_free(_attr->data);
+  free(_attr);
 }
 
 void json_free_object(JsonObject* _obj) {
+  if (_obj == NULL) {
+    return;
+  }
+
   JsonObjectAttribute* attr = _obj->first;
   JsonObjectAttribute* attr2;
   while (attr) {
@@ -429,11 +391,13 @@ JsonArray* json_parse_array(JsonStream* _enc) {
     return NULL;
   }
 
-  _enc->current++;
-  _enc->length--;
+  json_move_stream(_enc, 1);
   json_string_ltrim(_enc);
 
   JsonArray* arr = malloc(sizeof(JsonArray));
+  arr->first = NULL;
+  arr->last = NULL;
+  arr->length = 0;
 
   while (_enc->current[0] != JSON_ARRAY_END) {
     JsonArrayItem* item = json_parse_arrayItem(_enc);
@@ -443,7 +407,10 @@ JsonArray* json_parse_array(JsonStream* _enc) {
     json_add_arrayItem(arr, item);
 
     json_string_ltrim(_enc);
-    if (_enc->current[0] != ',' && _enc->current[0] != JSON_ARRAY_END) {
+    if (_enc->current[0] == ',') {
+      json_move_stream(_enc, 1);
+    }
+    else if (_enc->current[0] != JSON_ARRAY_END) {
       goto clean;
     }
   }
@@ -463,6 +430,7 @@ JsonArrayItem* json_parse_arrayItem(JsonStream* _enc) {
   json_string_ltrim(_enc);
 
   JsonArrayItem*  item = malloc(sizeof(JsonArrayItem));
+  item->next = NULL;
 
   // Get Value
   item->data = json_parse_value(_enc);
@@ -489,11 +457,37 @@ void json_add_arrayItem(JsonArray* _arr, JsonArrayItem* _item) {
   _arr->length++;
 }
 
+JsonArrayItem* json_get_arrayItem(JsonArray* _arr, size_t _index) {
+  if (_arr == NULL) {
+    return NULL;
+  }
+
+  if (_index >= _arr->length) {
+    return NULL;
+  }
+
+  JsonArrayItem* item = _arr->first;
+  while (_index--) {
+    item = item->next;
+  }
+
+  return item;
+}
+
 void json_free_arrayItem(JsonArrayItem* _item) {
+  if (_item == NULL) {
+    return;
+  }
+
   json_free(_item->data);
+  free(_item);
 }
 
 void json_free_array(JsonArray* _arr) {
+  if (_arr == NULL) {
+    return;
+  }
+
   JsonArrayItem* item = _arr->first;
   JsonArrayItem* item2;
   while (item) {
@@ -505,7 +499,11 @@ void json_free_array(JsonArray* _arr) {
   free(_arr);
 }
 
-void json_free(Json* _data) {
+void json_free(JsonValue* _data) {
+  if (_data == NULL) {
+    return;
+  }
+
   switch(_data->type) {
   case JSON_OBJECT:
     json_free_object(_data->data);
@@ -519,6 +517,7 @@ void json_free(Json* _data) {
   case JSON_NUMBER:
   case JSON_BOOL:
   case JSON_NULL:
+  case JSON_ERROR:
     free(_data->data);
     break;
   }
@@ -526,7 +525,7 @@ void json_free(Json* _data) {
   free(_data);
 }
 
-Json* json_parse_value(JsonStream* _enc) {
+JsonValue* json_parse_value(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
@@ -537,11 +536,15 @@ Json* json_parse_value(JsonStream* _enc) {
     return NULL;
   }
 
-  Json* data = malloc(sizeof(Json));
+  JsonValue* data = malloc(sizeof(JsonValue));
+  data->type = -1;
+  data->data = NULL;
 
   size_t pos = 0;
-  while(pos < _enc->length) {
-    if (_enc->current[pos] == '-' || (_enc->current[pos] >= '0' && _enc->current[pos] >= '9')) {
+  while(pos < _enc->length && data->type < 0) {
+    if (_enc->current[pos] == '+' ||
+	_enc->current[pos] == '-' ||
+	(_enc->current[pos] >= '0' && _enc->current[pos] <= '9')) {
       data->type = JSON_NUMBER;
       break;
     }
@@ -552,11 +555,9 @@ Json* json_parse_value(JsonStream* _enc) {
     case '[': data->type = JSON_ARRAY;  break;
     case '"': data->type = JSON_STRING; break;
     case 'n': data->type = JSON_NULL;   break;
-    default: return NULL;
+    default: goto clean;
     }
   }
-
-  _enc->length -= pos;
 
   switch(data->type) {
   case JSON_OBJECT: data->data = json_parse_object(_enc); break;
@@ -565,9 +566,10 @@ Json* json_parse_value(JsonStream* _enc) {
   case JSON_STRING: data->data = json_parse_string(_enc); break;
   case JSON_BOOL: data->data = json_parse_bool(_enc); break;
   case JSON_NULL: data->data = json_parse_null(_enc); break;
-  default: return NULL;
+  default: goto clean;
   }
 
+ clean:
   if (data->data == NULL) {
     json_free(data);
     return NULL;
@@ -589,22 +591,19 @@ JsonObjectAttribute* json_parse_objectAttribute(JsonStream* _enc) {
 
   // Get key
   JsonObjectAttribute* attr = malloc(sizeof(JsonObjectAttribute));
+  attr->next = NULL;
   attr->name = json_parse_string(_enc);
   if (attr->name == NULL) {
     goto clean;
   }
 
-  _enc->current += attr->name->length + 1;
-  _enc->length -= attr->name->length + 1;
-
   // Search for :
-  size_t colon_pos = json_string_indexOf(':', _enc, 0);
+  ssize_t colon_pos = json_string_indexOf(':', _enc, 0);
   if (colon_pos < 0) {
     goto clean;
   }
 
-  _enc->current += colon_pos + 1;
-  _enc->length -= colon_pos - 1;
+  json_move_stream(_enc, colon_pos + 1);
 
   // Get Value
   attr->data = json_parse_value(_enc);
@@ -619,37 +618,55 @@ JsonObjectAttribute* json_parse_objectAttribute(JsonStream* _enc) {
   return NULL;
 }
 
-Json* json_decode(const char* _json, size_t _len)
+JsonValue* json_decode(const char* _json, size_t _len)
 {
-  JsonStream enc;
-  enc.current = _json;
-  enc.length = _len;
+  JsonValue* data = NULL;
+  JsonStream* enc = json_stream(_json, _len);
 
-  Json* data = json_parse_value(_enc);
+  json_string_ltrim(enc);
+
+  if (enc->current[0] != JSON_OBJECT && enc->current[0] != JSON_ARRAY) {
+    goto clean;
+  }
+
+  data = json_parse_value(enc);
 
   if (data == NULL) {
     goto clean;
   }
 
+  free(enc);
   return data;
 
  clean:
-  if (_enc->length > 100) {
-    _enc->length = 100;
-    _enc->current[_enc->length] = '\0';
-  }
-  printf("ERROR: Invalid syntax near: %s%s\n", _enc->current, (_enc->length == 100? "...":""));
   json_free(data);
-  return NULL;
+
+  data = malloc(sizeof(JsonValue));
+  data->type = JSON_ERROR;
+  data->data = enc;
+  return data;
 }
 
-int main(int argc, const char* argv[])
-{
-  printf("test_json_string_indexOf: %d\n", test_json_string_indexOf());
-  printf("test_json_string_ltrim: %d\n", test_json_string_ltrim());
-  printf("test_json_parse_string: %d\n", test_json_parse_string());
-  printf("test_json_is_digit: %d\n", test_json_is_digit());
-  printf("test_json_parse_number: %d\n", test_json_parse_number());
-  printf("test_json_parse_bool: %d\n", test_json_parse_bool());
-  return 0;
+void json_print_error(JsonValue* _e) {
+  if (_e == NULL) {
+    printf("ERROR: No Json error data passed\n");
+    return;
+  }
+
+  if (_e->type != JSON_ERROR) {
+    printf("ERROR: Not a valid Json error data passed\n");
+    return;
+  }
+
+  JsonStream* s = (JsonStream*)_e->data;
+  printf("ERROR: Invalid syntax at offset( %ld ): %.100s\n", s->position, s->current);
+}
+
+JsonStream* json_stream(const char* _json, size_t _len) {
+  JsonStream* enc = malloc(sizeof(JsonStream));
+  enc->current = _json;
+  enc->start = _json;
+  enc->length = _len;
+  enc->position = 0;
+  return enc;
 }
