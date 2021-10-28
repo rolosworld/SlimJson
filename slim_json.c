@@ -38,8 +38,8 @@ static char json_is_digit(char c) {
   return c >= '0' && c <= '9';
 }
 
-static ssize_t json_string_length(const char* _str) {
-    ssize_t l = -1;
+static size_t json_string_length(const char* _str) {
+    size_t l = 0;
     while (_str[0] != '\0') {
       l++;
       _str++;
@@ -726,16 +726,17 @@ JsonValue* json_get(JsonValue* _v, const char* _path) {
   char last = 0;
   if (end < 0) {
     last = 1;
-    end = json_string_indexOf('\0', _path, len, 0);
+    end = len;
   }
 
   char* sub = json_substring(_path, end);
   char* name = sub;
-  if (_v->type != name[0]) {
+
+  if (type != _v->type) {
     goto clean;
   }
-  
-  switch (name[0]) {
+
+  switch (_v->type) {
   case JSON_OBJECT:
     obj = (JsonObject*)_v->data;
     name++;

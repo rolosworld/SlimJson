@@ -155,11 +155,15 @@ char test_json_parse_array() {
   oas1 = (JsonString*)oas->data;
   o2 = o2 && oas1->value[0] == '1' && oas1->length == 1;
 
-  /*
-  JsonValue* val = json_get("0");
+  JsonValue* val = json_get(v, "0");
+  o1 = o1 && val->type == JSON_STRING;
+  oas1 = (JsonString*)val->data;
+  o2 = o2 && oas1->value[0] == 'a' && oas1->length == 1;
 
-  val = json_get("1");
-  */
+  val = json_get(v, "1");
+  o1 = o1 && val->type == JSON_STRING;
+  oas1 = (JsonString*)val->data;
+  o2 = o2 && oas1->value[0] == '1' && oas1->length == 1;
 
   json_free(v);
 
