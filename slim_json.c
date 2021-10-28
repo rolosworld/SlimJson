@@ -44,18 +44,27 @@ static void json_move_stream(JsonStream* _s, size_t _amount) {
   _s->length -= _amount;
 }
 
+static char* json_substring(const char* _str, size_t _len) {
+  char* v = malloc(sizeof(char) * _len + 1);
+  v[_len] = '\0';
+  while(_len--) {
+    v[_len] = _str[_len];
+  }
+  return v;
+}
+
 // skip_escaped: Skip if the character has a \ before it
-static ssize_t json_string_indexOf(char _c, JsonStream* _enc, unsigned char _skip_escaped) {
-  if (_enc == NULL || _enc->length == 0) {
+static ssize_t json_string_indexOf(char _c, const char* _str, size_t _len, unsigned char _skip_escaped) {
+  if (_str == NULL || _len == 0) {
     return -1;
   }
 
-  for (int i = 0; i < _enc->length; i++) {
-    if (_enc->current[i] == '\0') {
+  for (int i = 0; i < _len; i++) {
+    if (_str[i] == '\0') {
       return -1;
     }
-    else if (_enc->current[i] == _c) {
-      if (_skip_escaped == 1 && i > 0 && _enc->current[i - 1] == '\\') {
+    else if (_str[i] == _c) {
+      if (_skip_escaped == 1 && i > 0 && _str[i - 1] == '\\') {
 	continue;
       }
 
@@ -119,20 +128,14 @@ JsonString* json_parse_string(JsonStream* _enc) {
 
   json_move_stream(_enc, 1);
 
-  ssize_t end = json_string_indexOf(JSON_STRING, _enc, 1);
+  ssize_t end = json_string_indexOf(JSON_STRING, _enc->current, _enc->length, 1);
   if (end < 0) {
     return NULL;
   }
 
   JsonString* str = malloc(sizeof(JsonString));
   str->length = end;
-  char* v = malloc(sizeof(char) * end + 1);
-  v[end] = '\0';
-  str->value = v;
-
-  while(end--) {
-    v[end] = _enc->current[end];
-  }
+  str->value = json_substring(_enc->current, end);
 
   json_move_stream(_enc, str->length + 1);
 
@@ -607,7 +610,7 @@ JsonObjectAttribute* json_parse_objectAttribute(JsonStream* _enc) {
   }
 
   // Search for :
-  ssize_t colon_pos = json_string_indexOf(':', _enc, 0);
+  ssize_t colon_pos = json_string_indexOf(':', _enc->current, _enc->length, 0);
   if (colon_pos < 0) {
     goto clean;
   }
@@ -669,4 +672,58 @@ void json_print_error(JsonValue* _e) {
 
   JsonStream* s = (JsonStream*)_e->data;
   printf("ERROR: Invalid syntax at offset( %ld ): %.100s\n", s->position, s->current);
+}
+
+// 0.name
+// obj.name
+JsonValue* json_get(JsonValue* _v, const char* _path, size_t _len) {
+  if (_len < 1) {
+    return NULL;
+  }
+
+  JsonValue v = NULL;
+  JsonObject* obj = NULL;
+  JsonArray* arr = NULL;
+  JsonObjectAttribute* objA = NULL;
+  JsonArrayItem* arrI = NULL;
+
+  char type = json_is_digit(_path[0]) ? JSON_ARRAY : JSON_OBJECT;
+
+  ssize_t end = json_strint_indexOf('.', _path, _len, 0);
+  char last = 0;
+  if (end < 0) {
+    last = 1;
+    end = json_strint_indexOf('\0', _path, _len, 0);
+  }
+
+  char* sub = json_substring(_path, end);
+  name = sub;
+  if (_v->type != name[0]) {
+    goto clean;
+  }
+  
+  switch (name[0]) {
+  case JSON_OBJECT:
+    obj = (JsonObject*)_v->data;
+    // Remove double quotes
+    // objA = json_get_objectAttribute(obj, name, len)
+    // while (objA)
+    //   if objA.name == name: v = objA.value, break;
+    break;
+  case JSON_ARRAY:
+    arr = (JsonArray*)_v->data;
+    // i = convert to int
+    // arrI = json_get_arrayItem(arr, name, len)
+    // while (i--)...  v = arrI.value, break;
+    break;
+  default:
+    goto clean:
+  }
+
+  // if (!last) v = json_get(v, _path + end, len - end)
+
+ clean:
+  free(name);
+
+  return v;
 }
