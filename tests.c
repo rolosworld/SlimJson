@@ -132,7 +132,9 @@ char test_json_parse_array() {
   char json6[] = "[\"a\",\"1\"]";
   JsonValue* v = json_decode(json6, sizeof(json6) - 1);
   JsonArray* o = (JsonArray*)v->data;
+
   JsonArrayItem* oa = o->first;
+
   JsonValue* oas = oa->data;
   char o1 = oas->type == JSON_STRING;
   JsonString* oas1 = (JsonString*)oas->data;
@@ -152,6 +154,12 @@ char test_json_parse_array() {
   oas = (JsonValue*)oa->data;
   oas1 = (JsonString*)oas->data;
   o2 = o2 && oas1->value[0] == '1' && oas1->length == 1;
+
+  /*
+  JsonValue* val = json_get("0");
+
+  val = json_get("1");
+  */
 
   json_free(v);
 

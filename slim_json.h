@@ -136,6 +136,7 @@ void json_print_error(JsonValue* _e);
 // Get
 JsonObjectAttribute* json_get_objectAttribute(JsonObject* _obj, const char* _name, size_t _len);
 JsonArrayItem* json_get_arrayItem(JsonArray* _arr, size_t _index);
-JsonValue* json_get(JsonValue* _v, const char* _path, size_t _len);
+
+JsonValue* json_get(JsonValue* _v, const char* _path);
 
 #endif /* __SLIM_JSON_H__ */

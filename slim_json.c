@@ -38,6 +38,16 @@ static char json_is_digit(char c) {
   return c >= '0' && c <= '9';
 }
 
+static ssize_t json_string_length(const char* _str) {
+    ssize_t l = -1;
+    while (_str[0] != '\0') {
+      l++;
+      _str++;
+    }
+
+    return l;
+}
+
 static ssize_t json_string_to_size(const char* _str, size_t _len) {
     ssize_t s = 0;
     while (_len--) {
@@ -363,6 +373,10 @@ JsonObjectAttribute* json_get_objectAttribute(JsonObject* _obj, const char* _nam
     return NULL;
   }
 
+  if (_len < 1) {
+    return NULL;
+  }
+
   JsonObjectAttribute* attr = _obj->first;
   while (attr != NULL) {
     if (json_equal_strings(attr->name->value, attr->name->length, _name, _len)) {
@@ -646,6 +660,10 @@ JsonObjectAttribute* json_parse_objectAttribute(JsonStream* _enc) {
 
 JsonValue* json_decode(const char* _json, size_t _len)
 {
+  if (_len < 1) {
+    return NULL;
+  }
+
   JsonValue* data = NULL;
   JsonStream* enc = json_stream(_json, _len);
 
@@ -690,8 +708,9 @@ void json_print_error(JsonValue* _e) {
 
 // 0.name
 // obj.name
-JsonValue* json_get(JsonValue* _v, const char* _path, size_t _len) {
-  if (_len < 1) {
+JsonValue* json_get(JsonValue* _v, const char* _path) {
+  size_t len = json_string_length(_path);
+  if (len < 1) {
     return NULL;
   }
 
@@ -703,11 +722,11 @@ JsonValue* json_get(JsonValue* _v, const char* _path, size_t _len) {
 
   char type = json_is_digit(_path[0]) ? JSON_ARRAY : JSON_OBJECT;
 
-  ssize_t end = json_string_indexOf('.', _path, _len, 0);
+  ssize_t end = json_string_indexOf('.', _path, len, 0);
   char last = 0;
   if (end < 0) {
     last = 1;
-    end = json_string_indexOf('\0', _path, _len, 0);
+    end = json_string_indexOf('\0', _path, len, 0);
   }
 
   char* sub = json_substring(_path, end);
@@ -741,7 +760,7 @@ JsonValue* json_get(JsonValue* _v, const char* _path, size_t _len) {
   }
 
   if (last != 1) {
-      v = json_get(v, _path + end, _len - end);
+      v = json_get(v, _path + end);
   }
 
  clean:
