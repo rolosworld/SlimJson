@@ -38,6 +38,20 @@ static char json_is_digit(char c) {
   return c >= '0' && c <= '9';
 }
 
+static ssize_t json_string_to_size(const char* _str, size_t _len) {
+    ssize_t s = 0;
+    while (_len--) {
+        if (json_is_digit(*_str) != 1) {
+            return -1;
+        }
+        s *= 10;
+        s += *_str - '0';
+        _str++;
+    }
+
+    return s;
+}
+
 static void json_move_stream(JsonStream* _s, size_t _amount) {
   _s->position += _amount;
   _s->current += _amount;
@@ -681,7 +695,7 @@ JsonValue* json_get(JsonValue* _v, const char* _path, size_t _len) {
     return NULL;
   }
 
-  JsonValue v = NULL;
+  JsonValue* v = NULL;
   JsonObject* obj = NULL;
   JsonArray* arr = NULL;
   JsonObjectAttribute* objA = NULL;
@@ -689,15 +703,15 @@ JsonValue* json_get(JsonValue* _v, const char* _path, size_t _len) {
 
   char type = json_is_digit(_path[0]) ? JSON_ARRAY : JSON_OBJECT;
 
-  ssize_t end = json_strint_indexOf('.', _path, _len, 0);
+  ssize_t end = json_string_indexOf('.', _path, _len, 0);
   char last = 0;
   if (end < 0) {
     last = 1;
-    end = json_strint_indexOf('\0', _path, _len, 0);
+    end = json_string_indexOf('\0', _path, _len, 0);
   }
 
   char* sub = json_substring(_path, end);
-  name = sub;
+  char* name = sub;
   if (_v->type != name[0]) {
     goto clean;
   }
@@ -705,25 +719,33 @@ JsonValue* json_get(JsonValue* _v, const char* _path, size_t _len) {
   switch (name[0]) {
   case JSON_OBJECT:
     obj = (JsonObject*)_v->data;
-    // Remove double quotes
-    // objA = json_get_objectAttribute(obj, name, len)
-    // while (objA)
-    //   if objA.name == name: v = objA.value, break;
+    name++;
+    objA = json_get_objectAttribute(obj, name, end - 2);
+    if (objA != NULL) {
+        v = objA->data;
+    }
     break;
   case JSON_ARRAY:
     arr = (JsonArray*)_v->data;
-    // i = convert to int
-    // arrI = json_get_arrayItem(arr, name, len)
-    // while (i--)...  v = arrI.value, break;
+    ssize_t index = json_string_to_size(name, end);
+    if (index < 0) {
+        goto clean;
+    }
+    arrI = json_get_arrayItem(arr, index);
+    if (arrI != NULL) {
+        v = arrI->data;
+    }
     break;
   default:
-    goto clean:
+      goto clean;
   }
 
-  // if (!last) v = json_get(v, _path + end, len - end)
+  if (last != 1) {
+      v = json_get(v, _path + end, _len - end);
+  }
 
  clean:
-  free(name);
+  free(sub);
 
   return v;
 }
