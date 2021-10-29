@@ -66,6 +66,10 @@ static void json_move_stream(JsonStream* _s, size_t _amount) {
   _s->position += _amount;
   _s->current += _amount;
   _s->length -= _amount;
+
+  if (json_string_length(_s->current) != _s->length) {
+    int i = 0;
+  }
 }
 
 static char* json_substring(const char* _str, size_t _len) {
@@ -267,7 +271,7 @@ JsonBool* json_parse_bool(JsonStream* _enc) {
   char F[] = "false";
   char* B = type == 't' ? T : F;
   size_t pos = type == 't' ? 4 : 5;
-  for (int i = 0; i < pos; i++, _enc->length--) {
+  for (int i = 0; i < pos; i++) {
     if (_enc->current[i] != B[i]) {
       return NULL;
     }
@@ -275,6 +279,9 @@ JsonBool* json_parse_bool(JsonStream* _enc) {
 
   JsonBool* bol = malloc(sizeof(JsonBool));
   bol->value = type == 't' ? 1 : 0;
+
+  json_move_stream(_enc, pos);
+
   return bol;
 }
 
@@ -302,7 +309,7 @@ JsonNull* json_parse_null(JsonStream* _enc) {
     }
   }
 
-  json_move_stream(_enc, 1);
+  json_move_stream(_enc, 4);
 
   JsonNull* nul = malloc(sizeof(JsonNull));
   nul->value = 0;
@@ -454,6 +461,8 @@ JsonArray* json_parse_array(JsonStream* _enc) {
       goto clean;
     }
   }
+
+  json_move_stream(_enc, 1);
 
   return arr;
 
@@ -761,7 +770,7 @@ JsonValue* json_get(JsonValue* _v, const char* _path) {
   }
 
   if (last != 1) {
-      v = json_get(v, _path + end);
+      v = json_get(v, _path + end + 1);
   }
 
  clean:

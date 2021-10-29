@@ -98,6 +98,11 @@ char test_json_parse_value_object() {
   JsonNumber* num = (JsonNumber*)od->data;
   o3 = o3 && ((float)num->value == (float)2.0);
 
+  JsonValue* val = json_get(v, "\"b\"");
+  o4 = o4 && val->type == JSON_NUMBER;
+  num = (JsonNumber*)val->data;
+  o3 = o3 && ((float)num->value == (float)2.0);
+
   json_free(v);
 
   return o1 && o2 && o3 && o4;
@@ -202,6 +207,31 @@ char test_json_decode() {
   return a;
 }
 
+char test_json_get() {
+  char json[] = "{\"a\":{\"1\":[{\"b\":[3,4]}]},\"b\":[2,{\"q\":true,\"rrr\":null}]}";
+  JsonValue* v = json_decode(json, sizeof(json) - 1);
+  char r = 1;
+
+  JsonValue* val = json_get(v, "\"a\".\"1\".0.\"b\".1");
+  r = r && val->type == JSON_NUMBER;
+  JsonNumber* n = (JsonNumber*)val->data;
+  r = r && n->value == 4;
+
+  val = json_get(v, "\"b\".1.\"q\"");
+  r = r && val->type == JSON_BOOL;
+  JsonBool* b = (JsonBool*)val->data;
+  r = r && b->value == 1;
+
+  val = json_get(v, "\"b\".1.\"rrr\"");
+  r = r && val->type == JSON_NULL;
+  JsonNull* nu = (JsonNull*)val->data;
+  r = r && nu->value == 0;
+
+  json_free(v);
+
+  return r;
+}
+
 int main(int argc, const char* argv[])
 {
   printf("test_json_parse_string: %d\n", test_json_parse_string());
@@ -211,6 +241,7 @@ int main(int argc, const char* argv[])
   printf("test_json_parse_object: %d\n", test_json_parse_object());
   printf("test_json_parse_array: %d\n", test_json_parse_array());
   printf("test_json_decode: %d\n", test_json_decode());
+  printf("test_json_get: %d\n", test_json_get());
 
   return 0;
 }
