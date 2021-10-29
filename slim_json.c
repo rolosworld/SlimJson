@@ -1,26 +1,26 @@
 /*
 
-MIT License
+  MIT License
 
-Copyright (c) 2021 Rolando Gonzalez-Chevere
+  Copyright (c) 2021 Rolando Gonzalez-Chevere
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
 
 */
 #include "slim_json.h"
@@ -64,27 +64,27 @@ static char json_is_digit(char c) {
 }
 
 static size_t json_string_length(const char* _str) {
-    size_t l = 0;
-    while (_str[0] != '\0') {
-      l++;
-      _str++;
-    }
+  size_t l = 0;
+  while (_str[0] != '\0') {
+    l++;
+    _str++;
+  }
 
-    return l;
+  return l;
 }
 
 static ssize_t json_string_to_size(const char* _str, size_t _len) {
-    ssize_t s = 0;
-    while (_len--) {
-        if (json_is_digit(*_str) != 1) {
-            return -1;
-        }
-        s *= 10;
-        s += *_str - '0';
-        _str++;
+  ssize_t s = 0;
+  while (_len--) {
+    if (json_is_digit(*_str) != 1) {
+      return -1;
     }
+    s *= 10;
+    s += *_str - '0';
+    _str++;
+  }
 
-    return s;
+  return s;
 }
 
 static void json_move_stream(JsonStream* _s, size_t _amount) {
@@ -743,6 +743,10 @@ void json_print_error(JsonValue* _e) {
 // 0.name
 // obj.name
 JsonValue* json_get(JsonValue* _v, const char* _path) {
+  if (_v == NULL) {
+    return NULL;
+  }
+
   size_t len = json_string_length(_path);
   if (len < 1) {
     return NULL;
@@ -775,27 +779,29 @@ JsonValue* json_get(JsonValue* _v, const char* _path) {
     obj = (JsonObject*)_v->data;
     name++;
     objA = json_get_objectAttribute(obj, name, end - 2);
-    if (objA != NULL) {
-        v = objA->data;
+    if (objA == NULL) {
+      goto clean;
     }
+    v = objA->data;
     break;
   case JSON_ARRAY:
     arr = (JsonArray*)_v->data;
     ssize_t index = json_string_to_size(name, end);
     if (index < 0) {
-        goto clean;
+      goto clean;
     }
     arrI = json_get_arrayItem(arr, index);
-    if (arrI != NULL) {
-        v = arrI->data;
+    if (arrI == NULL) {
+      goto clean;
     }
+    v = arrI->data;
     break;
   default:
-      goto clean;
+    goto clean;
   }
 
   if (last != 1) {
-      v = json_get(v, _path + end + 1);
+    v = json_get(v, _path + end + 1);
   }
 
  clean:
