@@ -25,6 +25,31 @@ SOFTWARE.
 */
 #include "slim_json.h"
 
+// Free
+static void json_free_objectAttribute(JsonObjectAttribute* _attr);
+static void json_free_objectAttribute(JsonObjectAttribute* _attr);
+static void json_free_object(JsonObject* _obj);
+static void json_free_string(JsonString* _str);
+static void json_free_arrayItem(JsonArrayItem* _item);
+static void json_free_array(JsonArray* _arr);
+
+// Parse
+static JsonString* json_parse_string(JsonStream* _enc);
+static JsonNumber* json_parse_number(JsonStream* _enc);
+static JsonBool* json_parse_bool(JsonStream* _enc);
+static JsonNull* json_parse_null(JsonStream* _enc);
+static JsonObject* json_parse_object(JsonStream* _enc);
+static JsonArray* json_parse_array(JsonStream* _enc);
+static JsonValue* json_parse_value(JsonStream* _enc);
+static JsonObjectAttribute* json_parse_objectAttribute(JsonStream* _enc);
+static JsonArrayItem* json_parse_arrayItem(JsonStream* _enc);
+
+// Add
+static void json_add_objectAttribute(JsonObject* _obj, JsonObjectAttribute* _attr);
+static void json_add_arrayItem(JsonArray* _arr, JsonArrayItem* _item);
+
+
+
 static JsonStream* json_stream(const char* _json, size_t _len) {
   JsonStream* enc = malloc(sizeof(JsonStream));
   enc->current = _json;
@@ -143,7 +168,7 @@ static char json_equal_strings(const char* _strA, size_t _lenA, const char* _str
   return 1;
 }
 
-JsonString* json_parse_string(JsonStream* _enc) {
+static JsonString* json_parse_string(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
@@ -170,7 +195,7 @@ JsonString* json_parse_string(JsonStream* _enc) {
   return str;
 }
 
-void json_free_string(JsonString* _str) {
+static void json_free_string(JsonString* _str) {
   if (_str->value == NULL) {
     return;
   }
@@ -179,7 +204,7 @@ void json_free_string(JsonString* _str) {
   free(_str);
 }
 
-JsonNumber* json_parse_number(JsonStream* _enc) {
+static JsonNumber* json_parse_number(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
@@ -242,7 +267,7 @@ JsonNumber* json_parse_number(JsonStream* _enc) {
 }
 
 // false or true
-JsonBool* json_parse_bool(JsonStream* _enc) {
+static JsonBool* json_parse_bool(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
@@ -286,7 +311,7 @@ JsonBool* json_parse_bool(JsonStream* _enc) {
 }
 
 // null
-JsonNull* json_parse_null(JsonStream* _enc) {
+static JsonNull* json_parse_null(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
@@ -317,7 +342,7 @@ JsonNull* json_parse_null(JsonStream* _enc) {
 }
 
 // Object
-JsonObject* json_parse_object(JsonStream* _enc) {
+static JsonObject* json_parse_object(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
@@ -395,7 +420,7 @@ JsonObjectAttribute* json_get_objectAttribute(JsonObject* _obj, const char* _nam
   return NULL;
 }
 
-void json_free_objectAttribute(JsonObjectAttribute* _attr) {
+static void json_free_objectAttribute(JsonObjectAttribute* _attr) {
   if (_attr == NULL) {
     return;
   }
@@ -405,7 +430,7 @@ void json_free_objectAttribute(JsonObjectAttribute* _attr) {
   free(_attr);
 }
 
-void json_free_object(JsonObject* _obj) {
+static void json_free_object(JsonObject* _obj) {
   if (_obj == NULL) {
     return;
   }
@@ -423,7 +448,7 @@ void json_free_object(JsonObject* _obj) {
 
 
 // Array
-JsonArray* json_parse_array(JsonStream* _enc) {
+static JsonArray* json_parse_array(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
@@ -471,7 +496,7 @@ JsonArray* json_parse_array(JsonStream* _enc) {
   return NULL;
 }
 
-JsonArrayItem* json_parse_arrayItem(JsonStream* _enc) {
+static JsonArrayItem* json_parse_arrayItem(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
@@ -523,7 +548,7 @@ JsonArrayItem* json_get_arrayItem(JsonArray* _arr, size_t _index) {
   return item;
 }
 
-void json_free_arrayItem(JsonArrayItem* _item) {
+static void json_free_arrayItem(JsonArrayItem* _item) {
   if (_item == NULL) {
     return;
   }
@@ -532,7 +557,7 @@ void json_free_arrayItem(JsonArrayItem* _item) {
   free(_item);
 }
 
-void json_free_array(JsonArray* _arr) {
+static void json_free_array(JsonArray* _arr) {
   if (_arr == NULL) {
     return;
   }
@@ -574,7 +599,7 @@ void json_free(JsonValue* _data) {
   free(_data);
 }
 
-JsonValue* json_parse_value(JsonStream* _enc) {
+static JsonValue* json_parse_value(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
@@ -627,7 +652,7 @@ JsonValue* json_parse_value(JsonStream* _enc) {
   return data;
 }
 
-JsonObjectAttribute* json_parse_objectAttribute(JsonStream* _enc) {
+static JsonObjectAttribute* json_parse_objectAttribute(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }

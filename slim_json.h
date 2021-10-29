@@ -57,7 +57,6 @@ typedef struct {
   void* data;
 } JsonValue;
 
-
 // String
 typedef struct {
   char* value;
@@ -103,32 +102,11 @@ typedef struct {
   JsonObjectAttribute* last;
 } JsonObject;
 
-// Free
-void json_free(JsonValue* _data);
-void json_free_objectAttribute(JsonObjectAttribute* _attr);
-void json_free_objectAttribute(JsonObjectAttribute* _attr);
-void json_free_object(JsonObject* _obj);
-void json_free_string(JsonString* _str);
-void json_free_arrayItem(JsonArrayItem* _item);
-void json_free_array(JsonArray* _arr);
-
-// Parse
-JsonString* json_parse_string(JsonStream* _enc);
-JsonNumber* json_parse_number(JsonStream* _enc);
-JsonBool* json_parse_bool(JsonStream* _enc);
-JsonNull* json_parse_null(JsonStream* _enc);
-JsonObject* json_parse_object(JsonStream* _enc);
-JsonArray* json_parse_array(JsonStream* _enc);
-JsonValue* json_parse_value(JsonStream* _enc);
-JsonObjectAttribute* json_parse_objectAttribute(JsonStream* _enc);
-JsonArrayItem* json_parse_arrayItem(JsonStream* _enc);
-
-// Add
-void json_add_objectAttribute(JsonObject* _obj, JsonObjectAttribute* _attr);
-void json_add_arrayItem(JsonArray* _arr, JsonArrayItem* _item);
-
 // Decode
 JsonValue* json_decode(const char* _json, size_t _len);
+
+// Free
+void json_free(JsonValue* _data);
 
 // Error
 void json_print_error(JsonValue* _e);

@@ -1,80 +1,5 @@
 #include "slim_json.h"
 
-char test_json_parse_string() {
-  char t[] = "  \n\t\r \"Foo\\\"Bar\",  ";
-  JsonStream e;
-  e.current = t;
-  e.length = sizeof(t) - 1;
-  JsonString* T = json_parse_string(&e);
-  char t1 = T->value[0] == 'F';
-  char t2 = T->value[T->length-1] == 'r';
-  char t3 = T->value[T->length] == '\0';
-  json_free_string(T);
-  return t1 && t2 && t3;
-}
-
-char test_json_parse_number() {
-  char n1[] = " -1.023 ";
-  size_t len = sizeof(n1) - 1;
-  JsonStream e;
-  e.current = n1;
-  e.length = len;
-  JsonNumber* num1 = json_parse_number(&e);
-  char v1 = ((float) num1->value) == ((float) -1.023);
-  free(num1);
-
-  char n2[] = " 1.023 ";
-  len = sizeof(n2) - 1;
-  e.current = n2;
-  e.length = len;
-  JsonNumber* num2 = json_parse_number(&e);
-  char v2 = ((float) num2->value) == ((float) 1.023);
-  free(num2);
-
-  char n3[] = "1023";
-  len = sizeof(n3) - 1;
-  e.current = n3;
-  e.length = len;
-  JsonNumber* num3 = json_parse_number(&e);
-  char v3 = ((float) num3->value) == ((float) 1023);
-  free(num3);
-
-  return v1 && v2 && v3;
-}
-
-char test_json_parse_bool() {
-  char b1[] = " true ";
-  size_t len = sizeof(b1) - 1;
-  JsonStream e;
-  e.current = b1;
-  e.length = len;
-  JsonBool* B1 = json_parse_bool(&e);
-  char v1 = B1->value == 1;
-  free(B1);
-
-  char b2[] = " false ";
-  len = sizeof(b2) - 1;
-  e.current = b2;
-  e.length = len;
-  JsonBool* B2 = json_parse_bool(&e);
-  char v2 = B2->value == 0;
-  free(B2);
-
-  return v1 && v2;
-}
-
-char test_json_parse_null() {
-  char n[] = " null ";
-  size_t len = sizeof(n) - 1;
-  JsonStream e;
-  e.current = n;
-  e.length = len;
-  JsonNull* N = json_parse_null(&e);
-  char v = N->value == 0;
-
-  return v;
-}
-
 char test_json_parse_value_object() {
   char json6[] = "{\"a\":\"1\",\"b\":2}";
   JsonValue* v = json_decode(json6, sizeof(json6) - 1);
@@ -234,9 +159,6 @@ char test_json_get() {
 
 int main(int argc, const char* argv[])
 {
-  printf("test_json_parse_string: %d\n", test_json_parse_string());
-  printf("test_json_parse_number: %d\n", test_json_parse_number());
-  printf("test_json_parse_bool: %d\n", test_json_parse_bool());
   printf("test_json_parse_value_object: %d\n", test_json_parse_value_object());
   printf("test_json_parse_object: %d\n", test_json_parse_object());
   printf("test_json_parse_array: %d\n", test_json_parse_array());
