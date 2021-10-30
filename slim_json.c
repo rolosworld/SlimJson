@@ -34,15 +34,15 @@ static void json_free_arrayItem(JsonArrayItem* _item);
 static void json_free_array(JsonArray* _arr);
 
 // Parse
-static JsonString* json_parse_string(JsonStream* _enc);
-static JsonNumber* json_parse_number(JsonStream* _enc);
-static JsonBool* json_parse_bool(JsonStream* _enc);
-static JsonNull* json_parse_null(JsonStream* _enc);
-static JsonObject* json_parse_object(JsonStream* _enc);
-static JsonArray* json_parse_array(JsonStream* _enc);
-static JsonValue* json_parse_value(JsonStream* _enc);
-static JsonObjectAttribute* json_parse_objectAttribute(JsonStream* _enc);
-static JsonArrayItem* json_parse_arrayItem(JsonStream* _enc);
+static JsonString* json_decode_string(JsonStream* _enc);
+static JsonNumber* json_decode_number(JsonStream* _enc);
+static JsonBool* json_decode_bool(JsonStream* _enc);
+static JsonNull* json_decode_null(JsonStream* _enc);
+static JsonObject* json_decode_object(JsonStream* _enc);
+static JsonArray* json_decode_array(JsonStream* _enc);
+static JsonValue* json_decode_value(JsonStream* _enc);
+static JsonObjectAttribute* json_decode_objectAttribute(JsonStream* _enc);
+static JsonArrayItem* json_decode_arrayItem(JsonStream* _enc);
 
 // Add
 static void json_add_objectAttribute(JsonObject* _obj, JsonObjectAttribute* _attr);
@@ -209,7 +209,7 @@ static char json_equal_strings(const char* _strA, size_t _lenA, const char* _str
   return 1;
 }
 
-static JsonString* json_parse_string(JsonStream* _enc) {
+static JsonString* json_decode_string(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
@@ -245,7 +245,7 @@ static void json_free_string(JsonString* _str) {
   free(_str);
 }
 
-static JsonNumber* json_parse_number(JsonStream* _enc) {
+static JsonNumber* json_decode_number(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
@@ -308,7 +308,7 @@ static JsonNumber* json_parse_number(JsonStream* _enc) {
 }
 
 // false or true
-static JsonBool* json_parse_bool(JsonStream* _enc) {
+static JsonBool* json_decode_bool(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
@@ -352,7 +352,7 @@ static JsonBool* json_parse_bool(JsonStream* _enc) {
 }
 
 // null
-static JsonNull* json_parse_null(JsonStream* _enc) {
+static JsonNull* json_decode_null(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
@@ -383,7 +383,7 @@ static JsonNull* json_parse_null(JsonStream* _enc) {
 }
 
 // Object
-static JsonObject* json_parse_object(JsonStream* _enc) {
+static JsonObject* json_decode_object(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
@@ -406,7 +406,7 @@ static JsonObject* json_parse_object(JsonStream* _enc) {
   obj->last = NULL;
 
   while (_enc->current[0] != JSON_OBJECT_END) {
-    JsonObjectAttribute* attr = json_parse_objectAttribute(_enc);
+    JsonObjectAttribute* attr = json_decode_objectAttribute(_enc);
     if (attr == NULL) {
       goto clean;
     }
@@ -489,7 +489,7 @@ static void json_free_object(JsonObject* _obj) {
 
 
 // Array
-static JsonArray* json_parse_array(JsonStream* _enc) {
+static JsonArray* json_decode_array(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
@@ -513,7 +513,7 @@ static JsonArray* json_parse_array(JsonStream* _enc) {
   arr->length = 0;
 
   while (_enc->current[0] != JSON_ARRAY_END) {
-    JsonArrayItem* item = json_parse_arrayItem(_enc);
+    JsonArrayItem* item = json_decode_arrayItem(_enc);
     if (item == NULL) {
       goto clean;
     }
@@ -537,7 +537,7 @@ static JsonArray* json_parse_array(JsonStream* _enc) {
   return NULL;
 }
 
-static JsonArrayItem* json_parse_arrayItem(JsonStream* _enc) {
+static JsonArrayItem* json_decode_arrayItem(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
@@ -548,7 +548,7 @@ static JsonArrayItem* json_parse_arrayItem(JsonStream* _enc) {
   item->next = NULL;
 
   // Get Value
-  item->data = json_parse_value(_enc);
+  item->data = json_decode_value(_enc);
   if (item->data == NULL) {
     goto clean;
   }
@@ -640,7 +640,7 @@ void json_free(JsonValue* _data) {
   free(_data);
 }
 
-static JsonValue* json_parse_value(JsonStream* _enc) {
+static JsonValue* json_decode_value(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
@@ -675,12 +675,12 @@ static JsonValue* json_parse_value(JsonStream* _enc) {
   }
 
   switch(data->type) {
-  case JSON_OBJECT: data->data = json_parse_object(_enc); break;
-  case JSON_ARRAY: data->data = json_parse_array(_enc); break;
-  case JSON_NUMBER: data->data = json_parse_number(_enc); break;
-  case JSON_STRING: data->data = json_parse_string(_enc); break;
-  case JSON_BOOL: data->data = json_parse_bool(_enc); break;
-  case JSON_NULL: data->data = json_parse_null(_enc); break;
+  case JSON_OBJECT: data->data = json_decode_object(_enc); break;
+  case JSON_ARRAY: data->data = json_decode_array(_enc); break;
+  case JSON_NUMBER: data->data = json_decode_number(_enc); break;
+  case JSON_STRING: data->data = json_decode_string(_enc); break;
+  case JSON_BOOL: data->data = json_decode_bool(_enc); break;
+  case JSON_NULL: data->data = json_decode_null(_enc); break;
   default: goto clean;
   }
 
@@ -693,7 +693,7 @@ static JsonValue* json_parse_value(JsonStream* _enc) {
   return data;
 }
 
-static JsonObjectAttribute* json_parse_objectAttribute(JsonStream* _enc) {
+static JsonObjectAttribute* json_decode_objectAttribute(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
   }
@@ -707,7 +707,7 @@ static JsonObjectAttribute* json_parse_objectAttribute(JsonStream* _enc) {
   // Get key
   JsonObjectAttribute* attr = malloc(sizeof(JsonObjectAttribute));
   attr->next = NULL;
-  attr->name = json_parse_string(_enc);
+  attr->name = json_decode_string(_enc);
   if (attr->name == NULL) {
     goto clean;
   }
@@ -721,7 +721,7 @@ static JsonObjectAttribute* json_parse_objectAttribute(JsonStream* _enc) {
   json_move_stream(_enc, colon_pos + 1);
 
   // Get Value
-  attr->data = json_parse_value(_enc);
+  attr->data = json_decode_value(_enc);
   if (attr->data == NULL) {
     goto clean;
   }
@@ -748,7 +748,7 @@ JsonValue* json_decode(const char* _json, size_t _len)
     goto clean;
   }
 
-  data = json_parse_value(enc);
+  data = json_decode_value(enc);
 
   if (data == NULL) {
     goto clean;
