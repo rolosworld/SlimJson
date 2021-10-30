@@ -48,7 +48,48 @@ static JsonArrayItem* json_parse_arrayItem(JsonStream* _enc);
 static void json_add_objectAttribute(JsonObject* _obj, JsonObjectAttribute* _attr);
 static void json_add_arrayItem(JsonArray* _arr, JsonArrayItem* _item);
 
+static void json_uint_to_string(size_t _val, char* _dest, size_t _len) {
+  char digits = 0;
+  size_t val = _val;
+  while (val) {
+    val = val / 10;
+    digits++;
+  }
 
+  if (digits > _len) {
+    return;
+  }
+
+  _dest[digits] = '\0';
+
+  val = _val;
+  float val2 = _val;
+  while (digits--) {
+    val2 = val / 10.0;
+    val /= 10.0;
+    val2 -= val;
+    val2 *= 10;
+
+    _dest[digits] = val2 + '0';
+  }
+}
+
+static void json_string_cat(char* _dest, size_t _len, const char* _src) {
+  size_t pos = 0;
+  while (pos < _len) {
+    if (_dest[pos] == '\0') {
+      break;
+    }
+    pos++;
+  }
+
+  size_t i = 0;
+  while (pos < _len && _src[i] != '\0') {
+    _dest[pos++] = _src[i++];
+  }
+
+  _dest[_len] = '\0';
+}
 
 static JsonStream* json_stream(const char* _json, size_t _len) {
   JsonStream* enc = malloc(sizeof(JsonStream));
@@ -725,19 +766,30 @@ JsonValue* json_decode(const char* _json, size_t _len)
   return data;
 }
 
-void json_print_error(JsonValue* _e) {
+JsonError json_get_errorMsg(JsonValue* _e) {
+  JsonError e = {0};
+  size_t len = sizeof(e.msg) - 1;
+
   if (_e == NULL) {
-    printf("ERROR: No Json error data passed\n");
-    return;
+    json_string_cat(e.msg, len, "ERROR: No Json error data passed");
+    return e;
   }
 
   if (_e->type != JSON_ERROR) {
-    printf("ERROR: Not a valid Json error data passed\n");
-    return;
+    json_string_cat(e.msg, len, "ERROR: Not a valid Json error data passed");
+    return e;
   }
 
   JsonStream* s = (JsonStream*)_e->data;
-  printf("ERROR: Invalid syntax at offset( %ld ): %.100s\n", s->position, s->current);
+  json_string_cat(e.msg, len, "ERROR: Invalid syntax at offset( ");
+
+  char offset[10] = {0};
+  json_uint_to_string(s->position, offset, 10);
+  json_string_cat(e.msg, len, offset);
+
+  json_string_cat(e.msg, len, " ): ");
+  json_string_cat(e.msg, len, s->current);
+  return e;
 }
 
 // 0.name

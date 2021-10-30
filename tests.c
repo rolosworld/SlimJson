@@ -1,4 +1,5 @@
 #include "slim_json.h"
+#include "stdio.h"
 
 char test_json_parse_value_object() {
   char json6[] = "{\"a\":\"1\",\"b\":2}";
@@ -107,7 +108,8 @@ char test_json_decode() {
   JsonValue* j = json_decode(J1, sizeof(J1) - 1);
   a = a && j->type == JSON_ERROR;
   if (j->type == JSON_ERROR) {
-    json_print_error(j);
+    JsonError e = json_get_errorMsg(j);
+    printf("%s\n",e.msg);
   }
   json_free(j);
 
@@ -125,7 +127,8 @@ char test_json_decode() {
   j = json_decode(J4, sizeof(J4) - 1);
   a = a && j->type == JSON_ERROR;
   if (j->type == JSON_ERROR) {
-    json_print_error(j);
+    JsonError e = json_get_errorMsg(j);
+    printf("%s\n",e.msg);
   }
   json_free(j);
 

@@ -26,7 +26,6 @@
 #ifndef __SLIM_JSON_H__
 #define  __SLIM_JSON_H__
 
-#include <stdio.h>
 #include <stdlib.h>
 
 #if defined(_MSC_VER)
@@ -44,6 +43,10 @@ typedef SSIZE_T ssize_t;
 
 #define JSON_OBJECT_END '}'
 #define JSON_ARRAY_END  ']'
+
+typedef struct {
+  char msg[250];
+} JsonError;
 
 typedef struct {
   const char* current;
@@ -109,7 +112,7 @@ JsonValue* json_decode(const char* _json, size_t _len);
 void json_free(JsonValue* _data);
 
 // Error
-void json_print_error(JsonValue* _e);
+JsonError json_get_errorMsg(JsonValue* _e);
 
 // Get
 JsonObjectAttribute* json_get_objectAttribute(JsonObject* _obj, const char* _name, size_t _len);
