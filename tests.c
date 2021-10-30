@@ -24,7 +24,7 @@ char test_json_parse_value_object() {
   JsonNumber* num = (JsonNumber*)od->data;
   o3 = o3 && ((float)num->value == (float)2.0);
 
-  JsonValue* val = json_get(v, "\"b\"");
+  const JsonValue* val = json_get(v, "\"b\"");
   o4 = o4 && val->type == JSON_NUMBER;
   num = (JsonNumber*)val->data;
   o3 = o3 && ((float)num->value == (float)2.0);
@@ -86,7 +86,7 @@ char test_json_parse_array() {
   oas1 = (JsonString*)oas->data;
   o2 = o2 && oas1->value[0] == '1' && oas1->length == 1;
 
-  JsonValue* val = json_get(v, "0");
+  const JsonValue* val = json_get(v, "0");
   o1 = o1 && val->type == JSON_STRING;
   oas1 = (JsonString*)val->data;
   o2 = o2 && oas1->value[0] == 'a' && oas1->length == 1;
@@ -140,7 +140,7 @@ char test_json_get() {
   JsonValue* v = json_decode(json, sizeof(json) - 1);
   char r = 1;
 
-  JsonValue* val = json_get(v, "{a}.{1}.0.{b}.1");
+  const JsonValue* val = json_get(v, "{a}.{1}.0.{b}.1");
   r = r && val->type == JSON_NUMBER;
   JsonNumber* n = (JsonNumber*)val->data;
   r = r && n->value == 4;

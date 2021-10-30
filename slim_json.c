@@ -794,7 +794,7 @@ JsonError json_get_errorMsg(JsonValue* _e) {
 
 // 0.name
 // obj.name
-JsonValue* json_get(JsonValue* _v, const char* _path) {
+const JsonValue* json_get(const JsonValue* _v, const char* _path) {
   if (_v == NULL) {
     return NULL;
   }
@@ -804,7 +804,7 @@ JsonValue* json_get(JsonValue* _v, const char* _path) {
     return NULL;
   }
 
-  JsonValue* v = NULL;
+  const JsonValue* v = NULL;
   JsonObject* obj = NULL;
   JsonArray* arr = NULL;
   JsonObjectAttribute* objA = NULL;
