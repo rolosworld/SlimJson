@@ -48,6 +48,24 @@ static JsonArrayItem* json_decode_arrayItem(JsonStream* _enc);
 static void json_add_objectAttribute(JsonObject* _obj, JsonObjectAttribute* _attr);
 static void json_add_arrayItem(JsonArray* _arr, JsonArrayItem* _item);
 
+static char json_equal_strings(const char* _strA, size_t _lenA, const char* _strB, size_t _lenB) {
+  if (_strA == NULL || _strB == NULL) {
+    return 0;
+  }
+
+  if (_lenA != _lenB) {
+    return 0;
+  }
+
+  while (_lenA--) {
+    if (*(_strA++) != *(_strB++)) {
+      return 0;
+    }
+  }
+
+  return 1;
+}
+
 static size_t json_string_hash(const char* _str) {
   size_t h = 0;
   while (*_str != '\0') {
@@ -198,24 +216,6 @@ static void json_string_ltrim(JsonStream* _enc) {
   }
 
   json_move_stream(_enc, pos);
-}
-
-static char json_equal_strings(const char* _strA, size_t _lenA, const char* _strB, size_t _lenB) {
-  if (_strA == NULL || _strB == NULL) {
-    return 0;
-  }
-
-  if (_lenA != _lenB) {
-    return 0;
-  }
-
-  while (_lenA--) {
-    if (*(_strA++) != *(_strB++)) {
-      return 0;
-    }
-  }
-
-  return 1;
 }
 
 static JsonString* json_decode_string(JsonStream* _enc) {
@@ -498,12 +498,18 @@ JsonObjectAttribute* json_get_objectAttribute(JsonObject* _obj, const char* _nam
     return NULL;
   }
 
-  JsonObjectAttribute* attr = _obj->first;
-  while (attr != NULL) {
-    if (json_equal_strings(attr->name->value, attr->name->length, _name, _len)) {
-      return attr;
+  if (_obj->length == 0) {
+    return NULL;
+  }
+
+  size_t i = json_string_hash(_name) % _obj->length;
+  JsonObjectDataNode* node = _obj->object[i];
+  size_t len = json_string_length(_name);
+  while (node) {
+    if (json_equal_strings(node->attribute->name->value, node->attribute->name->length, _name, _len) == 1) {
+      return node->attribute;
     }
-    attr = attr->next;
+    node = node->next;
   }
 
   return NULL;
