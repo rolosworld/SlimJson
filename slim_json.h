@@ -90,6 +90,7 @@ typedef struct JsonArrayItem {
 typedef struct {
   JsonArrayItem* first;
   JsonArrayItem* last;
+  JsonArrayItem* array; // Array of items, created after the decode is completed
   size_t length;
 } JsonArray;
 
@@ -100,9 +101,16 @@ typedef struct JsonObjectAttribute {
   JsonValue* data;
 } JsonObjectAttribute;
 
+typedef struct JsonObjectDataNode {
+  JsonObjectDataNode* next; // If the hash collide, insert here so we can compare the item key's
+  JsonObjectItem* item;
+} JsonObjectDataNode;
+
 typedef struct {
   JsonObjectAttribute* first;
   JsonObjectAttribute* last;
+  JsonObjectDataNode* object; // Array for the hash
+  size_t length;
 } JsonObject;
 
 // Decode
