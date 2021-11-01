@@ -48,6 +48,15 @@ static JsonArrayItem* json_decode_arrayItem(JsonStream* _enc);
 static void json_add_objectAttribute(JsonObject* _obj, JsonObjectAttribute* _attr);
 static void json_add_arrayItem(JsonArray* _arr, JsonArrayItem* _item);
 
+static size_t json_string_hash(const char* _str) {
+  size_t h = 0;
+  while (*_str != '\0') {
+    h = (h ^ *(_str++)) << 1;
+  }
+
+  return h;
+}
+
 static void json_uint_to_string(size_t _val, char* _dest, size_t _len) {
   char digits = 0;
   size_t val = _val;
@@ -404,6 +413,8 @@ static JsonObject* json_decode_object(JsonStream* _enc) {
   JsonObject* obj = malloc(sizeof(JsonObject));
   obj->first = NULL;
   obj->last = NULL;
+  obj->object = NULL;
+  obj->length = 0;
 
   while (_enc->current[0] != JSON_OBJECT_END) {
     JsonObjectAttribute* attr = json_decode_objectAttribute(_enc);
@@ -423,6 +434,42 @@ static JsonObject* json_decode_object(JsonStream* _enc) {
 
   json_move_stream(_enc, 1);
 
+  // Generate the hash map
+  if (obj->length) {
+    obj->object = malloc(sizeof(JsonObjectDataNode*) * obj->length);
+    JsonObjectAttribute* node = obj->first;
+    size_t i;
+
+    // Init array without using memset
+    for (i = 0; i < obj->length; i++) {
+      obj->object[i] = NULL;
+    }
+
+    JsonObjectDataNode* node2 = NULL;
+    JsonObjectDataNode* node3;
+    while (node) {
+      i = json_string_hash(node->name->value) % obj->length;
+
+      node3 = malloc(sizeof(JsonObjectDataNode));
+      node3->attribute = node;
+      node3->next = NULL;
+
+
+      node2 = obj->object[i];
+      if (node2 == NULL) {
+	obj->object[i] = node3;
+      }
+      else {
+	while (node2->next) {
+	  node2 = node2->next;
+	}
+	node2->next = node3;
+      }
+
+      node = node->next;
+    }
+  }
+
   return obj;
 
  clean:
@@ -439,6 +486,7 @@ void json_add_objectAttribute(JsonObject* _obj, JsonObjectAttribute* _attr) {
   }
 
   _obj->last = _attr;
+  _obj->length++;
 }
 
 JsonObjectAttribute* json_get_objectAttribute(JsonObject* _obj, const char* _name, size_t _len) {
@@ -476,6 +524,25 @@ static void json_free_object(JsonObject* _obj) {
     return;
   }
 
+  for (size_t i = 0; i < _obj->length; i++) {
+    JsonObjectDataNode* node = _obj->object[i];
+    JsonObjectDataNode* node2 = NULL;
+    if (node != NULL) {
+      node2 = node->next;
+      free(node);
+    }
+
+    while (node2 != NULL) {
+      node = node2->next;
+      free(node2);
+      node2 = node;
+    }
+  }
+
+  if (_obj->length) {
+    free(_obj->object);
+  }
+
   JsonObjectAttribute* attr = _obj->first;
   JsonObjectAttribute* attr2;
   while (attr) {
@@ -510,6 +577,7 @@ static JsonArray* json_decode_array(JsonStream* _enc) {
   JsonArray* arr = malloc(sizeof(JsonArray));
   arr->first = NULL;
   arr->last = NULL;
+  arr->array = NULL;
   arr->length = 0;
 
   while (_enc->current[0] != JSON_ARRAY_END) {
@@ -529,6 +597,17 @@ static JsonArray* json_decode_array(JsonStream* _enc) {
   }
 
   json_move_stream(_enc, 1);
+
+  // Create the array
+  if (arr->length) {
+    arr->array = malloc(sizeof(JsonArrayItem*) * arr->length);
+    JsonArrayItem* node = arr->first;
+    size_t i = 0;
+    while (node) {
+      arr->array[i++] = node;
+      node = node->next;
+    }
+  }
 
   return arr;
 
@@ -601,6 +680,10 @@ static void json_free_arrayItem(JsonArrayItem* _item) {
 static void json_free_array(JsonArray* _arr) {
   if (_arr == NULL) {
     return;
+  }
+
+  if (_arr->array != NULL) {
+    free(_arr->array);
   }
 
   JsonArrayItem* item = _arr->first;

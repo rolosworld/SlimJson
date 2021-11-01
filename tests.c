@@ -68,6 +68,7 @@ char test_json_parse_array() {
 
   JsonValue* oas = oa->data;
   char o1 = oas->type == JSON_STRING;
+  o1 = o1 && o->array[o->length - 1] == o->last;
   JsonString* oas1 = (JsonString*)oas->data;
   char o2 = oas1->value[0] == 'a' && oas1->length == 1;
   oa = oa->next;
