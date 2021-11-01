@@ -660,12 +660,7 @@ JsonArrayItem* json_get_arrayItem(JsonArray* _arr, size_t _index) {
     return NULL;
   }
 
-  JsonArrayItem* item = _arr->first;
-  while (_index--) {
-    item = item->next;
-  }
-
-  return item;
+  return _arr->array[_index];
 }
 
 static void json_free_arrayItem(JsonArrayItem* _item) {
