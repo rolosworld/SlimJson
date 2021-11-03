@@ -69,9 +69,9 @@ static char json_equal_strings(const char* _strA, size_t _lenA, const char* _str
   return 1;
 }
 
-static size_t json_string_hash(const char* _str) {
+static size_t json_string_hash(const char* _str, size_t _len) {
   size_t h = 0;
-  while (*_str != '\0') {
+  while (_len--) {
     h = (h ^ *(_str++)) << 1;
   }
 
@@ -451,7 +451,7 @@ static JsonObject* json_decode_object(JsonStream* _enc) {
     JsonObjectDataNode* node2 = NULL;
     JsonObjectDataNode* node3;
     while (node) {
-      i = json_string_hash(node->name->value) % obj->length;
+      i = json_string_hash(node->name->value, node->name->length) % obj->length;
 
       node3 = malloc(sizeof(JsonObjectDataNode));
       node3->attribute = node;
@@ -505,7 +505,7 @@ JsonObjectAttribute* json_get_objectAttribute(JsonObject* _obj, const char* _nam
     return NULL;
   }
 
-  size_t i = json_string_hash(_name) % _obj->length;
+  size_t i = json_string_hash(_name, _len) % _obj->length;
   JsonObjectDataNode* node = _obj->object[i];
   size_t len = json_string_length(_name);
   while (node) {
