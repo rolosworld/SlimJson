@@ -240,6 +240,26 @@ static JsonStringNode* json_encode_array(JsonArray* _arr) {
 }
 
 static JsonStringNode* json_encode_value(JsonValue* _val) {
+  switch (_val->type) {
+  case JSON_BOOL:
+    return json_encode_bool((JsonBool*)_val->data);
+    break;
+  case JSON_NUMBER:
+    return json_encode_number((JsonNumber*)_val->data);
+    break;
+  case JSON_NULL:
+    return json_encode_null((JsonNull*)_val->data);
+    break;
+  case JSON_STRING:
+    return json_encode_string((JsonString*)_val->data);
+    break;
+  case JSON_OBJECT:
+    return json_encode_object((JsonObject*)_val->data);
+    break;
+  case JSON_ARRAY:
+    return json_encode_array((JsonArray*)_val->data);
+    break;
+  }
 }
 
 static JsonStringNode* json_encode_objectAttribute(JsonObjectAttribute* _attr) {
