@@ -193,6 +193,8 @@ static JsonStringNode* json_encode_object(JsonObject* _obj) {
 
     if (attr != NULL) {
       JsonStringNode* commaNode = json_new_stringNode(1);
+      commaNode->value[0] = ',';
+      commaNode->length++;
       len++;
       node->next = commaNode;
       node = commaNode;
@@ -226,6 +228,8 @@ static JsonStringNode* json_encode_array(JsonArray* _arr) {
 
     if (item != NULL) {
       JsonStringNode* commaNode = json_new_stringNode(1);
+      commaNode->value[0] = ',';
+      commaNode->length++;
       len++;
       node->next = commaNode;
       node = commaNode;
@@ -263,7 +267,24 @@ static JsonStringNode* json_encode_value(JsonValue* _val) {
 }
 
 static JsonStringNode* json_encode_objectAttribute(JsonObjectAttribute* _attr) {
+  JsonStringNode* name = json_encode_string(_attr->name);
+  JsonStringNode* colon = json_new_stringNode(1);
+  colon->value[0] = ':';
+  colon->length++;
+  JsonStringNode* value = json_encode_value(_attr->data);
+  name->next = colon;
+  colon->next = value;
+  return name;
 }
 
 static JsonStringNode* json_encode_arrayItem(JsonArrayItem* _item) {
+  return json_encode_value(_item->data);
+}
+
+const char* json_encode(JsonValue* _value) {
+  JsonStringNode* node = json_encode_value(_value);
+  const char* result = node->value;
+  node->value = NULL;
+  json_free_stringNode(node);
+  return result;
 }

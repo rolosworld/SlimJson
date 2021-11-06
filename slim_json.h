@@ -130,4 +130,6 @@ JsonArrayItem* json_get_arrayItem(JsonArray* _arr, size_t _index);
 
 const JsonValue* json_get(const JsonValue* _v, const char* _path);
 
+const char* json_encode(JsonValue* _value);
+
 #endif /* __SLIM_JSON_H__ */
