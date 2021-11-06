@@ -32,6 +32,7 @@
  **/
 typedef struct JsonStringNode {
   char* value;
+  size_t length;
   struct JsonStringNode* next;
 } JsonStringNode;
 
@@ -114,7 +115,30 @@ static JsonStringNode* json_new_stringNode(size_t size) {
   JsonStringNode* node = malloc(sizeof(JsonStringNode));
   node->value = malloc(size);
   node->next = NULL;
+  node->length = size - 1;
   return node;
+}
+
+static JsonStringNode* json_merge_stringNode(JsonStringNode* _node) {
+  size_t len = 0;
+  JsonStringNode* node = _node;
+  while (node != NULL) {
+    len += node->length;
+    node = node->next;
+  }
+
+  JsonStringNode* merge = json_new_stringNode(len + 1);
+
+  node = _node;
+  len = 0;
+  while (node != NULL) {
+    json_string_cat(merge->value + len, node->length, node->value);
+    len += node->length;
+    node = node->next;
+  }
+
+  json_free_stringNode(_node);
+  return merge;
 }
 
 static JsonStringNode* json_encode_string(JsonString* _str) {
@@ -149,7 +173,36 @@ static JsonStringNode* json_encode_null(JsonNull* _nul) {
 }
 
 static JsonStringNode* json_encode_object(JsonObject* _obj) {
+  JsonStringNode* first = NULL;
+  JsonStringNode* node = NULL;
+  size_t len = 0;
+
+  JsonObjectAttribute* attr = _obj->first;
+  while (attr != NULL) {
+    JsonStringNode* attrNode = json_encode_objectAttribute(attr);
+    len += attrNode->length;
+    if (first == NULL) {
+      first = attrNode;
+    }
+    else {
+      node->next = attrNode;
+    }
+    node = attrNode;
+    attr = attr->next;
+  }
+
+  node = json_new_stringNode(len + 2);
+  node->value[0] = '{';
+
+  first = json_merge_stringNode(first);
+  json_string_cat(node->value + 1, first->length, first->value);
+  node->value[len - 1] = '}';
+
+  json_free_stringNode(first);
+
+  return node;
 }
+
 static JsonStringNode* json_encode_array(JsonArray* _arr) {
 }
 static JsonStringNode* json_encode_value(JsonValue* _val) {
