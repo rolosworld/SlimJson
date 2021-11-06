@@ -23,6 +23,7 @@
   SOFTWARE.
 
 */
+#include "slim_json_helpers.h"
 #include "slim_json.h"
 
 /**
@@ -104,23 +105,6 @@ static void json_uint_to_string(size_t _val, char* _dest, size_t _len) {
   }
 }
 
-static void json_string_cat(char* _dest, size_t _len, const char* _src) {
-  size_t pos = 0;
-  while (pos < _len) {
-    if (_dest[pos] == '\0') {
-      break;
-    }
-    pos++;
-  }
-
-  size_t i = 0;
-  while (pos < _len && _src[i] != '\0') {
-    _dest[pos++] = _src[i++];
-  }
-
-  _dest[_len] = '\0';
-}
-
 static JsonStream* json_stream(const char* _json, size_t _len) {
   JsonStream* enc = malloc(sizeof(JsonStream));
   enc->current = _json;
@@ -132,16 +116,6 @@ static JsonStream* json_stream(const char* _json, size_t _len) {
 
 static char json_is_digit(char c) {
   return c >= '0' && c <= '9';
-}
-
-static size_t json_string_length(const char* _str) {
-  size_t l = 0;
-  while (_str[0] != '\0') {
-    l++;
-    _str++;
-  }
-
-  return l;
 }
 
 static ssize_t json_string_to_size(const char* _str, size_t _len) {

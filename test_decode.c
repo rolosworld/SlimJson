@@ -163,13 +163,11 @@ char test_json_get() {
 
 int main(int argc, const char* argv[])
 {
-  /*
   printf("test_json_parse_value_object: %d\n", test_json_parse_value_object());
   printf("test_json_parse_object: %d\n", test_json_parse_object());
   printf("test_json_parse_array: %d\n", test_json_parse_array());
   printf("test_json_decode: %d\n", test_json_decode());
   printf("test_json_get: %d\n", test_json_get());
-  */
 
   return 0;
 }

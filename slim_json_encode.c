@@ -23,6 +23,7 @@
   SOFTWARE.
 
 */
+#include "slim_json_helpers.h"
 #include "slim_json.h"
 
 /**
@@ -30,7 +31,7 @@
  **/
 typedef struct JsonStringNode {
   char* value;
-  JsonStringNode* next;
+  struct JsonStringNode* next;
 } JsonStringNode;
 
 static char* json_string_copy(const char* _str);
@@ -66,7 +67,6 @@ static size_t json_string_escapableCount(const char* _str, size_t _len) {
     case '\n':
     case '\r':
     case '\t':
-    case '\u':
       escapables++;
     }
   }
