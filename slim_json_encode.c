@@ -37,15 +37,15 @@ typedef struct JsonStringNode {
 
 static char* json_string_copy(const char* _str);
 static JsonStringNode* json_encode_string(JsonString* _str);
-static JsonNumber* json_encode_number(JsonStream* _enc);
+static JsonStringNode* json_encode_number(JsonNumber* _num);
 
-static JsonBool* json_encode_bool(JsonStream* _enc);
-static JsonNull* json_encode_null(JsonStream* _enc);
-static JsonObject* json_encode_object(JsonStream* _enc);
-static JsonArray* json_encode_array(JsonStream* _enc);
-static JsonValue* json_encode_value(JsonStream* _enc);
-static JsonObjectAttribute* json_encode_objectAttribute(JsonStream* _enc);
-static JsonArrayItem* json_encode_arrayItem(JsonStream* _enc);
+static JsonStringNode* json_encode_bool(JsonBool* _bol);
+static JsonStringNode* json_encode_null(JsonNull* _nul);
+static JsonStringNode* json_encode_object(JsonObject* _obj);
+static JsonStringNode* json_encode_array(JsonArray* _arr);
+static JsonStringNode* json_encode_value(JsonValue* _val);
+static JsonStringNode* json_encode_objectAttribute(JsonObjectAttribute* _attr);
+static JsonStringNode* json_encode_arrayItem(JsonArrayItem* _item);
 
 static char* json_string_copy(const char* _str) {
   size_t len = json_string_length(_str);
@@ -133,17 +133,28 @@ static JsonStringNode* json_encode_number(JsonNumber* _num) {
   return node;
 }
 
-static JsonStringNode* json_encode_bool(JsonStream* _enc) {
+static JsonStringNode* json_encode_bool(JsonBool* _bol) {
+  //true false
+  size_t len = _bol->value ? 4 : 5;
+  JsonStringNode* node = json_new_stringNode(len + 1);
+  json_string_cat(node->value, len, _bol->value ? "true" : "false");
+  return node;
 }
-static JsonStringNode* json_encode_null(JsonStream* _enc) {
+
+static JsonStringNode* json_encode_null(JsonNull* _nul) {
+  size_t len = 4;
+  JsonStringNode* node = json_new_stringNode(len + 1);
+  json_string_cat(node->value, len, "null");
+  return node;
 }
-static JsonStringNode* json_encode_object(JsonStream* _enc) {
+
+static JsonStringNode* json_encode_object(JsonObject* _obj) {
 }
-static JsonStringNode* json_encode_array(JsonStream* _enc) {
+static JsonStringNode* json_encode_array(JsonArray* _arr) {
 }
-static JsonStringNode* json_encode_value(JsonStream* _enc) {
+static JsonStringNode* json_encode_value(JsonValue* _val) {
 }
-static JsonStringNode* json_encode_objectAttribute(JsonStream* _enc) {
+static JsonStringNode* json_encode_objectAttribute(JsonObjectAttribute* _attr) {
 }
-static JsonStringNode* json_encode_arrayItem(JsonStream* _enc) {
+static JsonStringNode* json_encode_arrayItem(JsonArrayItem* _item) {
 }
