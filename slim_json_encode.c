@@ -119,7 +119,7 @@ static JsonStringNode* json_new_stringNode(size_t size) {
   return node;
 }
 
-static JsonStringNode* json_merge_stringNode(JsonStringNode* _node) {
+static JsonStringNode* json_merge_stringNode(JsonStringNode* _node, size_t _start, size_t _offset) {
   size_t len = 0;
   JsonStringNode* node = _node;
   while (node != NULL) {
@@ -127,12 +127,13 @@ static JsonStringNode* json_merge_stringNode(JsonStringNode* _node) {
     node = node->next;
   }
 
-  JsonStringNode* merge = json_new_stringNode(len + 1);
+  JsonStringNode* merge = json_new_stringNode(len + _offset + 1);
+  char* val = merge->value + _start;
 
   node = _node;
   len = 0;
   while (node != NULL) {
-    json_string_cat(merge->value + len, node->length, node->value);
+    json_string_cat(val + len, node->length, node->value);
     len += node->length;
     node = node->next;
   }
@@ -191,14 +192,9 @@ static JsonStringNode* json_encode_object(JsonObject* _obj) {
     attr = attr->next;
   }
 
-  node = json_new_stringNode(len + 2);
+  node = json_merge_stringNode(first, 1, 2);
   node->value[0] = '{';
-
-  first = json_merge_stringNode(first);
-  json_string_cat(node->value + 1, first->length, first->value);
   node->value[len - 1] = '}';
-
-  json_free_stringNode(first);
 
   return node;
 }
