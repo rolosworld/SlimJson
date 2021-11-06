@@ -25,6 +25,7 @@
 */
 #include "slim_json_helpers.h"
 #include "slim_json.h"
+#include <stdio.h>
 
 /**
  * ENCODE 
@@ -55,18 +56,25 @@ static char* json_string_copy(const char* _str) {
   return str;
 }
 
+static char json_string_isEscapable(char _c) {
+  switch (_c) {
+  case '"':
+  case '\\':
+  case '/':
+  case '\b':
+  case '\f':
+  case '\n':
+  case '\r':
+  case '\t':
+    return 1;
+  }
+  return 0;
+}
+
 static size_t json_string_escapableCount(const char* _str, size_t _len) {
   size_t escapables = 0;
   while (_len) {
-    switch (_str[_len--]) {
-    case '"':
-    case '\\':
-    case '/':
-    case '\b':
-    case '\f':
-    case '\n':
-    case '\r':
-    case '\t':
+    if (json_string_isEscapable(_str[_len--])) {
       escapables++;
     }
   }
@@ -75,11 +83,15 @@ static size_t json_string_escapableCount(const char* _str, size_t _len) {
 
 static char* json_string_escapedCopy(const char* _str) {
   size_t len = json_string_length(_str);
-  size_t escapables = json_string_escapableCount(_str, len);
+  size_t len2 = len;
+  len2 += json_string_escapableCount(_str, len);
 
-  char* str = malloc(len + 1);
+  char* str = malloc(len2 + 1);
   while (len) {
-    str[len] = _str[len--];
+    str[pos--] = _str[len];
+    if (json_string_isEscapable(_str[len--])) {
+      str[pos--] = '\\';
+    }
   }
   return str;
 }
@@ -98,16 +110,40 @@ static void json_free_stringNode(JsonStringNode* _node) {
   }
 }
 
-static JsonStringNode* json_encode_string(JsonString* _str) {
+static JsonStringNode* json_new_stringNode(size_t size) {
   JsonStringNode* node = malloc(sizeof(JsonStringNode));
-  size_t len = _str->length + 2;
-  node->value = malloc(len + 1); // ""\0
-  node->value[0] = '"';
-  node->value[len - 1] = '"';
-  json_string_cat(node->value + 1, len - 2, _str->value);
+  node->value = malloc(size);
   node->next = NULL;
   return node;
 }
 
-static JsonNumber* json_encode_number(JsonStream* _enc) {
+static JsonStringNode* json_encode_string(JsonString* _str) {
+  JsonStringNode* node = json_new_stringNode(_str->length + 3);
+  size_t len = _str->length + 2;
+  node->value[0] = '"';
+  node->value[len - 1] = '"';
+  node->value[len] = '\0';
+  json_string_cat(node->value + 1, len - 2, _str->value);
+  return node;
+}
+
+static JsonStringNode* json_encode_number(JsonNumber* _num) {
+  JsonStringNode* node = json_new_stringNode(330);
+  sprintf(node->value, "%9.16f", _num->value);
+  return node;
+}
+
+static JsonStringNode* json_encode_bool(JsonStream* _enc) {
+}
+static JsonStringNode* json_encode_null(JsonStream* _enc) {
+}
+static JsonStringNode* json_encode_object(JsonStream* _enc) {
+}
+static JsonStringNode* json_encode_array(JsonStream* _enc) {
+}
+static JsonStringNode* json_encode_value(JsonStream* _enc) {
+}
+static JsonStringNode* json_encode_objectAttribute(JsonStream* _enc) {
+}
+static JsonStringNode* json_encode_arrayItem(JsonStream* _enc) {
 }
