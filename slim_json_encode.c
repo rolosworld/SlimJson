@@ -88,9 +88,9 @@ static char* json_string_escapedCopy(const char* _str) {
 
   char* str = malloc(len2 + 1);
   while (len) {
-    str[pos--] = _str[len];
+    str[len2--] = _str[len];
     if (json_string_isEscapable(_str[len--])) {
-      str[pos--] = '\\';
+      str[len2--] = '\\';
     }
   }
   return str;
