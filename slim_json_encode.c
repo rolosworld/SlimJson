@@ -281,9 +281,9 @@ static JsonStringNode* json_encode_arrayItem(JsonArrayItem* _item) {
   return json_encode_value(_item->data);
 }
 
-const char* json_encode(JsonValue* _value) {
+char* json_encode(JsonValue* _value) {
   JsonStringNode* node = json_encode_value(_value);
-  const char* result = node->value;
+  char* result = node->value;
   node->value = NULL;
   json_free_stringNode(node);
   return result;
