@@ -121,10 +121,26 @@ JsonError json_get_errorMsg(JsonValue* _e);
 const JsonValue* json_get(const JsonValue* _v, const char* _path);
 
 const char* json_get_string(const JsonValue* _v, const char* _path);
-const char* json_arrayItem_toString(const JsonArrayItem* _i);
+double json_get_number(const JsonValue* _v, const char* _path);
+
+// TODO:
+// json_get_bool(v, path)
+// json_get_null(v, path)
+//
+// json_get_object_string(obj, attributeName)
+// json_get_object_number(obj, attributeName)
+// json_get_object_bool(obj, attributeName)
+// json_get_object_null(obj, attributeName)
+//
+// json_get_array_string(arr, index)
+// json_get_array_number(arr, index)
+// json_get_array_bool(arr, index)
+// json_get_array_null(arr, index)
+
 const JsonObject* json_get_object(const JsonValue* _v, const char* _path);
 const JsonArray* json_get_array(const JsonValue* _v, const char* _path);
-double json_get_double(const JsonValue* _v, const char* _path);
+
+const char* json_arrayItem_toString(const JsonArrayItem* _i);
 
 // Encode
 char* json_encode(JsonValue* _value);

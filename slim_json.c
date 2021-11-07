@@ -1214,7 +1214,7 @@ const JsonArray* json_get_array(const JsonValue* _v, const char* _path) {
     return (const JsonArray*)v->data;
 }
 
-double json_get_double(const JsonValue* _v, const char* _path) {
+double json_get_number(const JsonValue* _v, const char* _path) {
     const JsonValue* v = json_get(_v, _path);
     if (v == NULL || v->type != JSON_NUMBER) {
       return 0;
