@@ -80,29 +80,6 @@ static ssize_t json_string_indexOf(char _c, const char* _str, size_t _len, unsig
 /*************
  ** DECODER **
  *************/
-// Free
-/*
-static void json_free_objectAttribute(JsonObjectAttribute* _attr);
-static void json_free_objectAttribute(JsonObjectAttribute* _attr);
-static void json_free_object(JsonObject* _obj);
-static void json_free_string(JsonString* _str);
-static void json_free_arrayItem(JsonArrayItem* _item);
-static void json_free_array(JsonArray* _arr);
-
-// Decode
-static JsonString* json_decode_string(JsonStream* _enc);
-static JsonNumber* json_decode_number(JsonStream* _enc);
-static JsonBool* json_decode_bool(JsonStream* _enc);
-static JsonNull* json_decode_null(JsonStream* _enc);
-static JsonObject* json_decode_object(JsonStream* _enc);
-static JsonArray* json_decode_array(JsonStream* _enc);
-static JsonObjectAttribute* json_decode_objectAttribute(JsonStream* _enc);
-static JsonArrayItem* json_decode_arrayItem(JsonStream* _enc);
-
-// Add
-static void json_add_objectAttribute(JsonObject* _obj, JsonObjectAttribute* _attr);
-static void json_add_arrayItem(JsonArray* _arr, JsonArrayItem* _item);
-*/
 
 static JsonValue* json_decode_value(JsonStream* _enc);
 
