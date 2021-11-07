@@ -23,12 +23,68 @@
   SOFTWARE.
 
 */
-#include "slim_json_helpers.h"
 #include "slim_json.h"
+#include <stdlib.h>
+#include <sys/types.h>
+#include <stdio.h>
 
-/**
- * DECODE 
- **/
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
+static size_t json_string_length(const char* _str) {
+  size_t l = 0;
+  while (_str[0] != '\0') {
+    l++;
+    _str++;
+  }
+
+  return l;
+}
+
+static void json_string_cat(char* _dest, size_t _len, const char* _src) {
+  size_t pos = 0;
+  while (pos < _len) {
+    if (_dest[pos] == '\0') {
+      break;
+    }
+    pos++;
+  }
+
+  size_t i = 0;
+  while (pos < _len && _src[i] != '\0') {
+    _dest[pos++] = _src[i++];
+  }
+
+  _dest[_len] = '\0';
+}
+
+// skip_escaped: Skip if the character has a \ before it
+static ssize_t json_string_indexOf(char _c, const char* _str, size_t _len, unsigned char _skip_escaped) {
+  if (_str == NULL || _len == 0) {
+    return -1;
+  }
+
+  for (int i = 0; i < _len; i++) {
+    if (_str[i] == '\0') {
+      return -1;
+    }
+    else if (_str[i] == _c) {
+      if (_skip_escaped == 1 && i > 0 && _str[i - 1] == '\\') {
+	continue;
+      }
+
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+/*************
+ ** DECODER **
+ *************/
 // Free
 static void json_free_objectAttribute(JsonObjectAttribute* _attr);
 static void json_free_objectAttribute(JsonObjectAttribute* _attr);
@@ -400,7 +456,7 @@ static JsonObject* json_decode_object(JsonStream* _enc) {
       obj->object[i] = NULL;
     }
 
-    JsonObjectDataNode* node2 = NULL;
+    JsonObjectDataNode* node2;
     JsonObjectDataNode* node3;
     while (node) {
       i = json_string_hash(node->name->value, node->name->length) % obj->length;
@@ -875,6 +931,7 @@ const JsonValue* json_get(const JsonValue* _v, const char* _path) {
     }
     v = objA->data;
     break;
+
   case JSON_ARRAY:
     arr = (JsonArray*)_v->data;
     ssize_t index = json_string_to_size(name, end);
@@ -887,6 +944,7 @@ const JsonValue* json_get(const JsonValue* _v, const char* _path) {
     }
     v = arrI->data;
     break;
+
   default:
     goto clean;
   }
@@ -899,4 +957,281 @@ const JsonValue* json_get(const JsonValue* _v, const char* _path) {
   free(sub);
 
   return v;
+}
+
+/*************
+ ** ENCODER **
+ *************/
+typedef struct JsonStringNode {
+  char* value;
+  size_t length;
+  struct JsonStringNode* next;
+} JsonStringNode;
+
+static char* json_string_copy(const char* _str);
+static JsonStringNode* json_encode_string(JsonString* _str);
+static JsonStringNode* json_encode_number(JsonNumber* _num);
+
+static JsonStringNode* json_encode_bool(JsonBool* _bol);
+static JsonStringNode* json_encode_null(JsonNull* _nul);
+static JsonStringNode* json_encode_object(JsonObject* _obj);
+static JsonStringNode* json_encode_array(JsonArray* _arr);
+static JsonStringNode* json_encode_value(JsonValue* _val);
+static JsonStringNode* json_encode_objectAttribute(JsonObjectAttribute* _attr);
+static JsonStringNode* json_encode_arrayItem(JsonArrayItem* _item);
+
+static char* json_string_copy(const char* _str) {
+  size_t len = json_string_length(_str);
+  char* str = malloc(len + 1);
+  while (len) {
+    str[len] = _str[len--];
+  }
+  return str;
+}
+
+static char json_string_isEscapable(char _c) {
+  switch (_c) {
+  case '"':
+  case '\\':
+  case '/':
+  case '\b':
+  case '\f':
+  case '\n':
+  case '\r':
+  case '\t':
+    return 1;
+  }
+  return 0;
+}
+
+static size_t json_string_escapableCount(const char* _str, size_t _len) {
+  size_t escapables = 0;
+  while (_len) {
+    if (json_string_isEscapable(_str[_len--])) {
+      escapables++;
+    }
+  }
+  return escapables;
+}
+
+static char* json_string_escapedCopy(const char* _str) {
+  size_t len = json_string_length(_str);
+  size_t len2 = len;
+  len2 += json_string_escapableCount(_str, len);
+
+  char* str = malloc(len2 + 1);
+  while (len) {
+    str[len2--] = _str[len];
+    if (json_string_isEscapable(_str[len--])) {
+      str[len2--] = '\\';
+    }
+  }
+  return str;
+}
+
+static void json_free_stringNode(JsonStringNode* _node) {
+  if (_node == NULL) {
+    return;
+  }
+
+  JsonStringNode* node = _node;
+  while (node) {
+    _node = node->next;
+    free(node->value);
+    free(node);
+    node = _node;
+  }
+}
+
+static JsonStringNode* json_new_stringNode(size_t size) {
+  JsonStringNode* node = malloc(sizeof(JsonStringNode));
+  node->value = malloc(size);
+  node->next = NULL;
+  node->length = size - 1;
+  while (size) {
+    node->value[--size] = '\0';
+  }
+  return node;
+}
+
+static JsonStringNode* json_merge_stringNode(JsonStringNode* _node, size_t _start, size_t _offset) {
+  size_t len = 0;
+  JsonStringNode* node = _node;
+  while (node != NULL) {
+    len += node->length;
+    node = node->next;
+  }
+
+  JsonStringNode* merge = json_new_stringNode(len + _offset + 1);
+  char* val = merge->value + _start;
+
+  node = _node;
+  len = 0;
+  while (node != NULL) {
+    json_string_cat(val + len, node->length, node->value);
+    len += node->length;
+    node = node->next;
+  }
+
+  json_free_stringNode(_node);
+  return merge;
+}
+
+static JsonStringNode* json_encode_string(JsonString* _str) {
+  JsonStringNode* node = json_new_stringNode(_str->length + 3);
+  size_t len = _str->length + 2;
+  node->value[0] = '"';
+  node->value[len - 1] = '"';
+  json_string_cat(node->value + 1, len - 1, _str->value);
+  return node;
+}
+
+static JsonStringNode* json_encode_number(JsonNumber* _num) {
+  JsonStringNode* node = json_new_stringNode(330);
+  sprintf(node->value, "%9.16f", _num->value);
+  ssize_t index = json_string_indexOf('.', node->value, node->length, 0);
+  node->length = json_string_length(node->value);
+  if (index > -1) {
+    size_t len = node->length;
+    while (len--) {
+      if (node->value[len] == '0') {
+	node->value[len] = '\0';
+	node->length--;
+	continue;
+      }
+
+      if (node->value[len] == '.') {
+	node->value[len] = '\0';
+	node->length--;
+      }
+
+      break;
+    }
+  }
+  return node;
+}
+
+static JsonStringNode* json_encode_bool(JsonBool* _bol) {
+  //true false
+  size_t len = _bol->value ? 4 : 5;
+  JsonStringNode* node = json_new_stringNode(len + 1);
+  json_string_cat(node->value, len, _bol->value ? "true" : "false");
+  return node;
+}
+
+static JsonStringNode* json_encode_null(JsonNull* _nul) {
+  size_t len = 4;
+  JsonStringNode* node = json_new_stringNode(len + 1);
+  json_string_cat(node->value, len, "null");
+  return node;
+}
+
+static JsonStringNode* json_encode_object(JsonObject* _obj) {
+  JsonStringNode* first = NULL;
+  JsonStringNode* node = NULL;
+
+  JsonObjectAttribute* attr = _obj->first;
+  while (attr != NULL) {
+    JsonStringNode* attrNode = json_encode_objectAttribute(attr);
+    if (first == NULL) {
+      first = attrNode;
+    }
+    else {
+      node->next = attrNode;
+    }
+    node = attrNode;
+    attr = attr->next;
+
+    if (attr != NULL) {
+      JsonStringNode* commaNode = json_new_stringNode(1);
+      commaNode->value[0] = ',';
+      commaNode->length++;
+      node->next = commaNode;
+      node = commaNode;
+    }
+  }
+
+  node = json_merge_stringNode(first, 1, 2);
+  node->value[0] = '{';
+  node->value[node->length - 1] = '}';
+
+  return node;
+}
+
+static JsonStringNode* json_encode_array(JsonArray* _arr) {
+  JsonStringNode* first = NULL;
+  JsonStringNode* node = NULL;
+
+  JsonArrayItem* item = _arr->first;
+  while (item != NULL) {
+    JsonStringNode* itemNode = json_encode_arrayItem(item);
+    if (first == NULL) {
+      first = itemNode;
+    }
+    else {
+      node->next = itemNode;
+    }
+    node = itemNode;
+    item = item->next;
+
+    if (item != NULL) {
+      JsonStringNode* commaNode = json_new_stringNode(1);
+      commaNode->value[0] = ',';
+      commaNode->length++;
+      node->next = commaNode;
+      node = commaNode;
+    }
+  }
+
+  node = json_merge_stringNode(first, 1, 2);
+  node->value[0] = '[';
+  node->value[node->length - 1] = ']';
+
+  return node;
+}
+
+static JsonStringNode* json_encode_value(JsonValue* _val) {
+  switch (_val->type) {
+  case JSON_BOOL:
+    return json_encode_bool((JsonBool*)_val->data);
+    break;
+  case JSON_NUMBER:
+    return json_encode_number((JsonNumber*)_val->data);
+    break;
+  case JSON_NULL:
+    return json_encode_null((JsonNull*)_val->data);
+    break;
+  case JSON_STRING:
+    return json_encode_string((JsonString*)_val->data);
+    break;
+  case JSON_OBJECT:
+    return json_encode_object((JsonObject*)_val->data);
+    break;
+  case JSON_ARRAY:
+    return json_encode_array((JsonArray*)_val->data);
+    break;
+  }
+}
+
+static JsonStringNode* json_encode_objectAttribute(JsonObjectAttribute* _attr) {
+  JsonStringNode* name = json_encode_string(_attr->name);
+  JsonStringNode* colon = json_new_stringNode(1);
+  JsonStringNode* value = json_encode_value(_attr->data);
+  colon->value[0] = ':';
+  colon->length++;
+  name->next = colon;
+  colon->next = value;
+  return json_merge_stringNode(name, 0, 0);
+}
+
+static JsonStringNode* json_encode_arrayItem(JsonArrayItem* _item) {
+  return json_encode_value(_item->data);
+}
+
+char* json_encode(JsonValue* _value) {
+  JsonStringNode* node = json_encode_value(_value);
+  char* result = node->value;
+  node->value = NULL;
+  json_free_stringNode(node);
+  return result;
 }
