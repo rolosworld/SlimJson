@@ -28,13 +28,6 @@
 
 #include <stdlib.h>
 
-#include <sys/types.h>
-
-#if defined(_MSC_VER)
-#include <BaseTsd.h>
-typedef SSIZE_T ssize_t;
-#endif
-
 #define JSON_OBJECT '{'
 #define JSON_ARRAY  '['
 #define JSON_STRING '"'

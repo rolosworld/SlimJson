@@ -24,8 +24,6 @@
 
 */
 #include "slim_json.h"
-#include <stdlib.h>
-#include <sys/types.h>
 #include <stdio.h>
 
 #if defined(_MSC_VER)
@@ -1088,7 +1086,7 @@ static JsonStringNode* json_encode_string(JsonString* _str) {
 
 static JsonStringNode* json_encode_number(JsonNumber* _num) {
   JsonStringNode* node = json_new_stringNode(330);
-  sprintf(node->value, "%9.16f", _num->value);
+  snprintf(node->value, node->length, "%9.16f", _num->value);
   ssize_t index = json_string_indexOf('.', node->value, node->length, 0);
   node->length = json_string_length(node->value);
   if (index > -1) {
