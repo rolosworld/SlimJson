@@ -1,6 +1,14 @@
 # SlimJson
 C Minimalistic Json Library
 
+I made this JSON library to satisfy a need for a personal project. Currently it has these limitations:
+- No UTF8 support
+- Numbers are parsed as a double. It's a basic parser from a string like "-123.456" to the double -123.4560000.
+
+# Install
+
+Just copy slim_json.h and slim_json.c into your project and mention the license + copyright
+
 # Usage Patterns
 
 - Load the Json string into a JsonValue
@@ -11,7 +19,7 @@ C Minimalistic Json Library
 char jsonString[] = "{\"a\":{\"1\":[{\"b\":[3,4]}]},\"b\":[2,{\"q\":true,\"rrr\":null}]}";
 
 // Decoding the JSON string into the JsonValue structure:
-JsonValue* v = json_decode(jsonString, jsonStringLength);
+JsonValue* v = json_decode(jsonString);
 if (v->type == JSON_ERROR) {
     JsonError e = json_get_errorMsg(v);
     printf("%s\n",e.msg);
