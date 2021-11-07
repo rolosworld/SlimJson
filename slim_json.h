@@ -109,7 +109,7 @@ typedef struct {
 } JsonObject;
 
 // Decode
-JsonValue* json_decode(const char* _json, size_t _len);
+JsonValue* json_decode(const char* _json);
 
 // Free
 void json_free(JsonValue* _data);

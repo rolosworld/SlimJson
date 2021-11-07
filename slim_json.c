@@ -33,11 +33,9 @@ typedef SSIZE_T ssize_t;
 
 static size_t json_string_length(const char* _str) {
   size_t l = 0;
-  while (_str[0] != '\0') {
+  while (*_str++ != '\0') {
     l++;
-    _str++;
   }
-
   return l;
 }
 
@@ -826,8 +824,10 @@ static JsonObjectAttribute* json_decode_objectAttribute(JsonStream* _enc) {
   return NULL;
 }
 
-JsonValue* json_decode(const char* _json, size_t _len)
+JsonValue* json_decode(const char* _json)
 {
+  size_t _len = json_string_length(_json);
+
   if (_len < 1) {
     return NULL;
   }

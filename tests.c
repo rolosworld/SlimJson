@@ -3,7 +3,7 @@
 
 char test_json_parse_value_object() {
   char json6[] = "{\"a\":\"1\",\"b\":2}";
-  JsonValue* v = json_decode(json6, sizeof(json6) - 1);
+  JsonValue* v = json_decode(json6);
   char o1 = v->type == JSON_OBJECT;
 
   JsonObject* o = (JsonObject*)v->data;
@@ -36,7 +36,7 @@ char test_json_parse_value_object() {
 
 char test_json_parse_object() {
   char json6[] = "{\"a\":\"1\"}";
-  JsonValue* v = json_decode(json6, sizeof(json6) - 1);
+  JsonValue* v = json_decode(json6);
   JsonObject* o = (JsonObject*)v->data;
   JsonObjectAttribute* oa = o->first;
   JsonString* oas = oa->name;
@@ -61,7 +61,7 @@ char test_json_parse_object() {
 
 char test_json_parse_array() {
   char json6[] = "[\"a\",\"1\"]";
-  JsonValue* v = json_decode(json6, sizeof(json6) - 1);
+  JsonValue* v = json_decode(json6);
   JsonArray* o = (JsonArray*)v->data;
 
   JsonArrayItem* oa = o->first;
@@ -106,7 +106,7 @@ char test_json_decode() {
   char a = 1;
 
   char J1[] = "    a";
-  JsonValue* j = json_decode(J1, sizeof(J1) - 1);
+  JsonValue* j = json_decode(J1);
   a = a && j->type == JSON_ERROR;
   if (j->type == JSON_ERROR) {
     JsonError e = json_get_errorMsg(j);
@@ -115,17 +115,17 @@ char test_json_decode() {
   json_free(j);
 
   char J2[] = "    {\"a\":1}  ";
-  j = json_decode(J2, sizeof(J2) - 1);
+  j = json_decode(J2);
   a = a && j->type != JSON_ERROR;
   json_free(j);
 
   char J3[] = "    {\"a\":1,}  ";
-  j = json_decode(J3, sizeof(J3) - 1);
+  j = json_decode(J3);
   a = a && j->type != JSON_ERROR;
   json_free(j);
 
   char J4[] = "    {\"a\":z,}  ";
-  j = json_decode(J4, sizeof(J4) - 1);
+  j = json_decode(J4);
   a = a && j->type == JSON_ERROR;
   if (j->type == JSON_ERROR) {
     JsonError e = json_get_errorMsg(j);
@@ -138,7 +138,7 @@ char test_json_decode() {
 
 char test_json_get() {
   char json[] = "{\"a\":{\"1\":[{\"b\":[3,4]}]},\"b\":[2,{\"q\":true,\"rrr\":null}]}";
-  JsonValue* v = json_decode(json, sizeof(json) - 1);
+  JsonValue* v = json_decode(json);
   char r = 1;
 
   const JsonValue* val = json_get(v, "{a}.{1}.0.{b}.1");
@@ -163,7 +163,7 @@ char test_json_get() {
 
 char test_json_encode() {
   char json[] = "{\"a\":{\"1\":[{\"b\":[3,4]}]},\"b\":[2,{\"q\":true,\"rrr\":null}]}";
-  JsonValue* v = json_decode(json, sizeof(json) - 1);
+  JsonValue* v = json_decode(json);
   char r = 1;
 
   const JsonValue* val = json_get(v, "{a}.{1}.0.{b}.1");
