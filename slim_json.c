@@ -239,8 +239,7 @@ static JsonNumber* json_decode_number(JsonStream* _enc) {
   char fraction = 0;
   while (_enc->length > pos) {
     if (json_is_digit(_enc->current[pos]) == 1) {
-      value *= 10;
-      value += _enc->current[pos] - '0';
+      value = value*10 + _enc->current[pos] - '0';
       if (fraction) {
 	fraction++;
       }
@@ -277,6 +276,8 @@ static JsonNumber* json_decode_number(JsonStream* _enc) {
 }
 
 // false or true
+static const char TRUE_STR[] = "true";
+static const char FALSE_STR[] = "false";
 static JsonBool* json_decode_bool(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
@@ -302,12 +303,11 @@ static JsonBool* json_decode_bool(JsonStream* _enc) {
     return NULL;
   }
 
-  char T[] = "true";
-  char F[] = "false";
-  char* B = type == 't' ? T : F;
+  const char* B = type == 't' ? TRUE_STR : FALSE_STR;
   size_t pos = type == 't' ? 4 : 5;
-  for (int i = 0; i < pos; i++) {
-    if (_enc->current[i] != B[i]) {
+  size_t end = pos;
+  while (pos--) {
+    if (_enc->current[pos] != B[pos]) {
       return NULL;
     }
   }
@@ -315,12 +315,13 @@ static JsonBool* json_decode_bool(JsonStream* _enc) {
   JsonBool* bol = malloc(sizeof(JsonBool));
   bol->value = type == 't' ? 1 : 0;
 
-  json_move_stream(_enc, pos);
+  json_move_stream(_enc, end);
 
   return bol;
 }
 
 // null
+static const char NULL_STR[] = "null";
 static JsonNull* json_decode_null(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
@@ -336,10 +337,9 @@ static JsonNull* json_decode_null(JsonStream* _enc) {
     return NULL;
   }
 
-  char N[] = "null";
   size_t pos = 4;
   while (pos--) {
-    if (_enc->current[pos] != N[pos]) {
+    if (_enc->current[pos] != NULL_STR[pos]) {
       return NULL;
     }
   }
