@@ -116,6 +116,9 @@ static JsonStringNode* json_new_stringNode(size_t size) {
   node->value = malloc(size);
   node->next = NULL;
   node->length = size - 1;
+  while (size) {
+    node->value[--size] = '\0';
+  }
   return node;
 }
 
@@ -269,12 +272,12 @@ static JsonStringNode* json_encode_value(JsonValue* _val) {
 static JsonStringNode* json_encode_objectAttribute(JsonObjectAttribute* _attr) {
   JsonStringNode* name = json_encode_string(_attr->name);
   JsonStringNode* colon = json_new_stringNode(1);
+  JsonStringNode* value = json_encode_value(_attr->data);
   colon->value[0] = ':';
   colon->length++;
-  JsonStringNode* value = json_encode_value(_attr->data);
   name->next = colon;
   colon->next = value;
-  return name;
+  return json_merge_stringNode(name, 0, 0);
 }
 
 static JsonStringNode* json_encode_arrayItem(JsonArrayItem* _item) {
