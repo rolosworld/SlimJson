@@ -150,8 +150,7 @@ static JsonStringNode* json_encode_string(JsonString* _str) {
   size_t len = _str->length + 2;
   node->value[0] = '"';
   node->value[len - 1] = '"';
-  node->value[len] = '\0';
-  json_string_cat(node->value + 1, len, _str->value);
+  json_string_cat(node->value + 1, len - 1, _str->value);
   return node;
 }
 
