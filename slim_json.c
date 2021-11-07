@@ -110,32 +110,6 @@ static size_t json_string_hash(const char* _str, size_t _len) {
   return h;
 }
 
-static void json_uint_to_string(size_t _val, char* _dest, size_t _len) {
-  char digits = 0;
-  size_t val = _val;
-  while (val) {
-    val = val / 10;
-    digits++;
-  }
-
-  if (digits > _len) {
-    return;
-  }
-
-  _dest[digits] = '\0';
-
-  val = _val;
-  float val2 = _val;
-  while (digits--) {
-    val2 = val / 10.0;
-    val /= 10.0;
-    val2 -= val;
-    val2 *= 10;
-
-    _dest[digits] = val2 + '0';
-  }
-}
-
 static JsonStream* json_stream(const char* _json, size_t _len) {
   JsonStream* enc = malloc(sizeof(JsonStream));
   enc->current = _json;
@@ -853,14 +827,7 @@ JsonError json_get_errorMsg(JsonValue* _e) {
   }
 
   JsonStream* s = (JsonStream*)_e->data;
-  json_string_cat(e.msg, len, "ERROR: Invalid syntax at offset( ");
-
-  char offset[10] = {0};
-  json_uint_to_string(s->position, offset, 10);
-  json_string_cat(e.msg, len, offset);
-
-  json_string_cat(e.msg, len, " ): ");
-  json_string_cat(e.msg, len, s->current);
+  snprintf(e.msg, len, "ERROR: Invalid syntax at offset( %ld ): %s", s->position, s->current);
   return e;
 }
 
