@@ -917,8 +917,9 @@ static JsonStringNode* json_encode_value(JsonValue* _val);
 static char* json_string_copy(const char* _str) {
   size_t len = json_string_length(_str);
   char* str = malloc(len + 1);
-  while (len) {
-    str[len] = _str[len--];
+  str[len] = '\0';
+  while (len--) {
+    str[len] = _str[len];
   }
   return str;
 }
@@ -940,8 +941,8 @@ static char json_string_isEscapable(char _c) {
 
 static size_t json_string_escapableCount(const char* _str, size_t _len) {
   size_t escapables = 0;
-  while (_len) {
-    if (json_string_isEscapable(_str[_len--])) {
+  while (_len--) {
+    if (json_string_isEscapable(_str[_len])) {
       escapables++;
     }
   }
@@ -950,8 +951,7 @@ static size_t json_string_escapableCount(const char* _str, size_t _len) {
 
 static char* json_string_escapedCopy(const char* _str) {
   size_t len = json_string_length(_str);
-  size_t len2 = len;
-  len2 += json_string_escapableCount(_str, len);
+  size_t len2 = len + json_string_escapableCount(_str, len);
 
   char* str = malloc(len2 + 1);
   while (len) {
@@ -982,8 +982,8 @@ static JsonStringNode* json_new_stringNode(size_t size) {
   node->value = malloc(size);
   node->next = NULL;
   node->length = size - 1;
-  while (size) {
-    node->value[--size] = '\0';
+  while (size--) {
+    node->value[size] = '\0';
   }
   return node;
 }
@@ -1046,17 +1046,16 @@ static JsonStringNode* json_encode_number(JsonNumber* _num) {
 }
 
 static JsonStringNode* json_encode_bool(JsonBool* _bol) {
-  //true false
   size_t len = _bol->value ? 4 : 5;
   JsonStringNode* node = json_new_stringNode(len + 1);
-  json_string_cat(node->value, len, _bol->value ? "true" : "false");
+  json_string_cat(node->value, len, _bol->value ? TRUE_STR : FALSE_STR);
   return node;
 }
 
 static JsonStringNode* json_encode_null(JsonNull* _nul) {
   size_t len = 4;
   JsonStringNode* node = json_new_stringNode(len + 1);
-  json_string_cat(node->value, len, "null");
+  json_string_cat(node->value, len, NULL_STR);
   return node;
 }
 
