@@ -118,11 +118,15 @@ void json_free(JsonValue* _data);
 JsonError json_get_errorMsg(JsonValue* _e);
 
 // Get
-JsonObjectAttribute* json_get_objectAttribute(JsonObject* _obj, const char* _name, size_t _len);
-JsonArrayItem* json_get_arrayItem(JsonArray* _arr, size_t _index);
-
 const JsonValue* json_get(const JsonValue* _v, const char* _path);
 
+const char* json_get_string(const JsonValue* _v, const char* _path);
+const char* json_arrayItem_toString(const JsonArrayItem* _i);
+const JsonObject* json_get_object(const JsonValue* _v, const char* _path);
+const JsonArray* json_get_array(const JsonValue* _v, const char* _path);
+double json_get_double(const JsonValue* _v, const char* _path);
+
+// Encode
 char* json_encode(JsonValue* _value);
 
 #endif /* __SLIM_JSON_H__ */

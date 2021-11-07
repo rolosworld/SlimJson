@@ -46,13 +46,8 @@ char test_json_parse_object() {
   JsonString* ods = (JsonString*)od->data;
   char o3 = ods->value[0] == '1' && ods->length == 1;
 
-  oa = json_get_objectAttribute(o, "a", 1);
-  oas = oa->name;
-  o2 = o2 && oas->value[0] == 'a' && oas->length == 1;
-  od = (JsonValue*)oa->data;
-  o4 = o4 && od->type == JSON_STRING;
-  ods = (JsonString*)od->data;
-  o3 = o3 && ods->value[0] == '1' && ods->length == 1;
+  const char* n = json_get_string(v, "{a}");
+  o3 = o3 && n[0] == '1';
 
   json_free(v);
 
@@ -77,13 +72,11 @@ char test_json_parse_array() {
   char o3 = oas1->value[0] == '1' && oas1->length == 1;
   char o4 = oas->type == JSON_STRING;
 
-  oa = json_get_arrayItem(o, 0);
-  oas = (JsonValue*)oa->data;
+  oas = (JsonValue*)o->array[0]->data;
   oas1 = (JsonString*)oas->data;
   o2 = o2 && oas1->value[0] == 'a' && oas1->length == 1;
 
-  oa = json_get_arrayItem(o, 1);
-  oas = (JsonValue*)oa->data;
+  oas = (JsonValue*)o->array[1]->data;
   oas1 = (JsonString*)oas->data;
   o2 = o2 && oas1->value[0] == '1' && oas1->length == 1;
 

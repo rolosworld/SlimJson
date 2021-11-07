@@ -535,7 +535,7 @@ static JsonObject* json_decode_object(JsonStream* _enc) {
   return NULL;
 }
 
-JsonObjectAttribute* json_get_objectAttribute(JsonObject* _obj, const char* _name, size_t _len) {
+static JsonObjectAttribute* json_get_objectAttribute(JsonObject* _obj, const char* _name, size_t _len) {
   if (_obj == NULL) {
     return NULL;
   }
@@ -686,7 +686,7 @@ static JsonArray* json_decode_array(JsonStream* _enc) {
   return NULL;
 }
 
-JsonArrayItem* json_get_arrayItem(JsonArray* _arr, size_t _index) {
+static JsonArrayItem* json_get_arrayItem(JsonArray* _arr, size_t _index) {
   if (_arr == NULL) {
     return NULL;
   }
@@ -1168,3 +1168,59 @@ char* json_encode(JsonValue* _value) {
   json_free_stringNode(node);
   return result;
 }
+
+/*****************
+ ** GET HELPERS **
+ *****************/
+const JsonValue* GetValue(const JsonValue* _v, const char* _path) {
+    const JsonValue* v = json_get(_v, _path);
+    return v;
+}
+
+const char* json_get_string(const JsonValue* _v, const char* _path) {
+    const JsonValue* v = json_get(_v, _path);
+    if (v == NULL || v->type != JSON_STRING) {
+      return NULL;
+    }
+
+    const JsonString* s = (const JsonString*)v->data;
+    return s->value;
+}
+
+const char* json_arrayItem_toString(const JsonArrayItem* _i) {
+    if (_i == NULL || _i->data->type != JSON_STRING) {
+      return NULL;
+    }
+
+    const JsonString* s = (const JsonString*)_i->data->data;
+    return s->value;
+}
+
+const JsonObject* json_get_object(const JsonValue* _v, const char* _path) {
+    const JsonValue* v = json_get(_v, _path);
+    if (v == NULL || v->type != JSON_OBJECT) {
+      return NULL;
+    }
+
+    return (const JsonObject*)v->data;
+}
+
+const JsonArray* json_get_array(const JsonValue* _v, const char* _path) {
+    const JsonValue* v = json_get(_v, _path);
+    if (v == NULL || v->type != JSON_ARRAY) {
+      return NULL;
+    }
+
+    return (const JsonArray*)v->data;
+}
+
+double json_get_double(const JsonValue* _v, const char* _path) {
+    const JsonValue* v = json_get(_v, _path);
+    if (v == NULL || v->type != JSON_NUMBER) {
+      return 0;
+    }
+
+    const JsonNumber* n = (JsonNumber*)v->data;
+    return n->value;
+}
+
