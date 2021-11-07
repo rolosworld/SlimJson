@@ -58,3 +58,25 @@ static void json_string_cat(char* _dest, size_t _len, const char* _src) {
 
   _dest[_len] = '\0';
 }
+
+// skip_escaped: Skip if the character has a \ before it
+static ssize_t json_string_indexOf(char _c, const char* _str, size_t _len, unsigned char _skip_escaped) {
+  if (_str == NULL || _len == 0) {
+    return -1;
+  }
+
+  for (int i = 0; i < _len; i++) {
+    if (_str[i] == '\0') {
+      return -1;
+    }
+    else if (_str[i] == _c) {
+      if (_skip_escaped == 1 && i > 0 && _str[i - 1] == '\\') {
+	continue;
+      }
+
+      return i;
+    }
+  }
+
+  return -1;
+}

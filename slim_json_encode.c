@@ -151,13 +151,32 @@ static JsonStringNode* json_encode_string(JsonString* _str) {
   node->value[0] = '"';
   node->value[len - 1] = '"';
   node->value[len] = '\0';
-  json_string_cat(node->value + 1, len - 2, _str->value);
+  json_string_cat(node->value + 1, len, _str->value);
   return node;
 }
 
 static JsonStringNode* json_encode_number(JsonNumber* _num) {
   JsonStringNode* node = json_new_stringNode(330);
   sprintf(node->value, "%9.16f", _num->value);
+  ssize_t index = json_string_indexOf('.', node->value, node->length, 0);
+  node->length = json_string_length(node->value);
+  if (index > -1) {
+    size_t len = node->length;
+    while (len--) {
+      if (node->value[len] == '0') {
+	node->value[len] = '\0';
+	node->length--;
+	continue;
+      }
+
+      if (node->value[len] == '.') {
+	node->value[len] = '\0';
+	node->length--;
+      }
+
+      break;
+    }
+  }
   return node;
 }
 
@@ -179,12 +198,10 @@ static JsonStringNode* json_encode_null(JsonNull* _nul) {
 static JsonStringNode* json_encode_object(JsonObject* _obj) {
   JsonStringNode* first = NULL;
   JsonStringNode* node = NULL;
-  size_t len = 0;
 
   JsonObjectAttribute* attr = _obj->first;
   while (attr != NULL) {
     JsonStringNode* attrNode = json_encode_objectAttribute(attr);
-    len += attrNode->length;
     if (first == NULL) {
       first = attrNode;
     }
@@ -198,7 +215,6 @@ static JsonStringNode* json_encode_object(JsonObject* _obj) {
       JsonStringNode* commaNode = json_new_stringNode(1);
       commaNode->value[0] = ',';
       commaNode->length++;
-      len++;
       node->next = commaNode;
       node = commaNode;
     }
@@ -206,7 +222,7 @@ static JsonStringNode* json_encode_object(JsonObject* _obj) {
 
   node = json_merge_stringNode(first, 1, 2);
   node->value[0] = '{';
-  node->value[len - 1] = '}';
+  node->value[node->length - 1] = '}';
 
   return node;
 }
@@ -214,12 +230,10 @@ static JsonStringNode* json_encode_object(JsonObject* _obj) {
 static JsonStringNode* json_encode_array(JsonArray* _arr) {
   JsonStringNode* first = NULL;
   JsonStringNode* node = NULL;
-  size_t len = 0;
 
   JsonArrayItem* item = _arr->first;
   while (item != NULL) {
     JsonStringNode* itemNode = json_encode_arrayItem(item);
-    len += itemNode->length;
     if (first == NULL) {
       first = itemNode;
     }
@@ -233,7 +247,6 @@ static JsonStringNode* json_encode_array(JsonArray* _arr) {
       JsonStringNode* commaNode = json_new_stringNode(1);
       commaNode->value[0] = ',';
       commaNode->length++;
-      len++;
       node->next = commaNode;
       node = commaNode;
     }
@@ -241,7 +254,7 @@ static JsonStringNode* json_encode_array(JsonArray* _arr) {
 
   node = json_merge_stringNode(first, 1, 2);
   node->value[0] = '[';
-  node->value[len - 1] = ']';
+  node->value[node->length - 1] = ']';
 
   return node;
 }
