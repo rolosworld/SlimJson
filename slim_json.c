@@ -912,17 +912,7 @@ typedef struct JsonStringNode {
   struct JsonStringNode* next;
 } JsonStringNode;
 
-static char* json_string_copy(const char* _str);
-static JsonStringNode* json_encode_string(JsonString* _str);
-static JsonStringNode* json_encode_number(JsonNumber* _num);
-
-static JsonStringNode* json_encode_bool(JsonBool* _bol);
-static JsonStringNode* json_encode_null(JsonNull* _nul);
-static JsonStringNode* json_encode_object(JsonObject* _obj);
-static JsonStringNode* json_encode_array(JsonArray* _arr);
 static JsonStringNode* json_encode_value(JsonValue* _val);
-static JsonStringNode* json_encode_objectAttribute(JsonObjectAttribute* _attr);
-static JsonStringNode* json_encode_arrayItem(JsonArrayItem* _item);
 
 static char* json_string_copy(const char* _str) {
   size_t len = json_string_length(_str);
@@ -1070,6 +1060,17 @@ static JsonStringNode* json_encode_null(JsonNull* _nul) {
   return node;
 }
 
+static JsonStringNode* json_encode_objectAttribute(JsonObjectAttribute* _attr) {
+  JsonStringNode* name = json_encode_string(_attr->name);
+  JsonStringNode* colon = json_new_stringNode(1);
+  JsonStringNode* value = json_encode_value(_attr->data);
+  colon->value[0] = ':';
+  colon->length++;
+  name->next = colon;
+  colon->next = value;
+  return json_merge_stringNode(name, 0, 0);
+}
+
 static JsonStringNode* json_encode_object(JsonObject* _obj) {
   JsonStringNode* first = NULL;
   JsonStringNode* node = NULL;
@@ -1100,6 +1101,10 @@ static JsonStringNode* json_encode_object(JsonObject* _obj) {
   node->value[node->length - 1] = '}';
 
   return node;
+}
+
+static JsonStringNode* json_encode_arrayItem(JsonArrayItem* _item) {
+  return json_encode_value(_item->data);
 }
 
 static JsonStringNode* json_encode_array(JsonArray* _arr) {
@@ -1155,21 +1160,6 @@ static JsonStringNode* json_encode_value(JsonValue* _val) {
     return json_encode_array((JsonArray*)_val->data);
     break;
   }
-}
-
-static JsonStringNode* json_encode_objectAttribute(JsonObjectAttribute* _attr) {
-  JsonStringNode* name = json_encode_string(_attr->name);
-  JsonStringNode* colon = json_new_stringNode(1);
-  JsonStringNode* value = json_encode_value(_attr->data);
-  colon->value[0] = ':';
-  colon->length++;
-  name->next = colon;
-  colon->next = value;
-  return json_merge_stringNode(name, 0, 0);
-}
-
-static JsonStringNode* json_encode_arrayItem(JsonArrayItem* _item) {
-  return json_encode_value(_item->data);
 }
 
 char* json_encode(JsonValue* _value) {
