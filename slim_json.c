@@ -826,14 +826,14 @@ static JsonObjectAttribute* json_decode_objectAttribute(JsonStream* _enc) {
 
 JsonValue* json_decode(const char* _json)
 {
-  size_t _len = json_string_length(_json);
+  size_t len = json_string_length(_json);
 
-  if (_len < 1) {
+  if (len < 1) {
     return NULL;
   }
 
   JsonValue* data = NULL;
-  JsonStream* enc = json_stream(_json, _len);
+  JsonStream* enc = json_stream(_json, len);
 
   json_string_ltrim(enc);
 
