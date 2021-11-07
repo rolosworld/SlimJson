@@ -48,9 +48,8 @@ static void json_string_cat(char* _dest, size_t _len, const char* _src) {
     pos++;
   }
 
-  size_t i = 0;
-  while (pos < _len && _src[i] != '\0') {
-    _dest[pos++] = _src[i++];
+  while (pos < _len && *_src != '\0') {
+    _dest[pos++] = *_src++;
   }
 
   _dest[_len] = '\0';
@@ -82,6 +81,7 @@ static ssize_t json_string_indexOf(char _c, const char* _str, size_t _len, unsig
  ** DECODER **
  *************/
 // Free
+/*
 static void json_free_objectAttribute(JsonObjectAttribute* _attr);
 static void json_free_objectAttribute(JsonObjectAttribute* _attr);
 static void json_free_object(JsonObject* _obj);
@@ -96,13 +96,15 @@ static JsonBool* json_decode_bool(JsonStream* _enc);
 static JsonNull* json_decode_null(JsonStream* _enc);
 static JsonObject* json_decode_object(JsonStream* _enc);
 static JsonArray* json_decode_array(JsonStream* _enc);
-static JsonValue* json_decode_value(JsonStream* _enc);
 static JsonObjectAttribute* json_decode_objectAttribute(JsonStream* _enc);
 static JsonArrayItem* json_decode_arrayItem(JsonStream* _enc);
 
 // Add
 static void json_add_objectAttribute(JsonObject* _obj, JsonObjectAttribute* _attr);
 static void json_add_arrayItem(JsonArray* _arr, JsonArrayItem* _item);
+*/
+
+static JsonValue* json_decode_value(JsonStream* _enc);
 
 static char json_equal_strings(const char* _strA, size_t _lenA, const char* _strB, size_t _lenB) {
   if (_strA == NULL || _strB == NULL) {
@@ -399,6 +401,104 @@ static JsonNull* json_decode_null(JsonStream* _enc) {
 }
 
 // Object
+static void json_free_objectAttribute(JsonObjectAttribute* _attr) {
+  if (_attr == NULL) {
+    return;
+  }
+
+  json_free_string(_attr->name);
+  json_free(_attr->data);
+  free(_attr);
+}
+
+static JsonObjectAttribute* json_decode_objectAttribute(JsonStream* _enc) {
+  if (_enc == NULL || _enc->length == 0) {
+    return NULL;
+  }
+
+  json_string_ltrim(_enc);
+
+  if (_enc->current[0] != JSON_STRING) {
+    return NULL;
+  }
+
+  // Get key
+  JsonObjectAttribute* attr = malloc(sizeof(JsonObjectAttribute));
+  attr->next = NULL;
+  attr->name = json_decode_string(_enc);
+  if (attr->name == NULL) {
+    goto clean;
+  }
+
+  // Search for :
+  ssize_t colon_pos = json_string_indexOf(':', _enc->current, _enc->length, 0);
+  if (colon_pos < 0) {
+    goto clean;
+  }
+
+  json_move_stream(_enc, colon_pos + 1);
+
+  // Get Value
+  attr->data = json_decode_value(_enc);
+  if (attr->data == NULL) {
+    goto clean;
+  }
+
+  return attr;
+
+ clean:
+  json_free_objectAttribute(attr);
+  return NULL;
+}
+
+void json_add_objectAttribute(JsonObject* _obj, JsonObjectAttribute* _attr) {
+  if (_obj->first == NULL) {
+    _obj->first = _attr;
+  }
+  else {
+    _obj->last->next = _attr;
+  }
+
+  _obj->last = _attr;
+  _obj->length++;
+}
+
+
+static void json_free_object(JsonObject* _obj) {
+  if (_obj == NULL) {
+    return;
+  }
+
+  for (size_t i = 0; i < _obj->length; i++) {
+    JsonObjectDataNode* node = _obj->object[i];
+    JsonObjectDataNode* node2 = NULL;
+    if (node != NULL) {
+      node2 = node->next;
+      free(node);
+    }
+
+    while (node2 != NULL) {
+      node = node2->next;
+      free(node2);
+      node2 = node;
+    }
+  }
+
+  if (_obj->length) {
+    free(_obj->object);
+  }
+
+  JsonObjectAttribute* attr = _obj->first;
+  JsonObjectAttribute* attr2;
+  while (attr) {
+    attr2 = attr;
+    attr = attr->next;
+    json_free_objectAttribute(attr2);
+  }
+
+  free(_obj);
+}
+
 static JsonObject* json_decode_object(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
@@ -484,18 +584,6 @@ static JsonObject* json_decode_object(JsonStream* _enc) {
   return NULL;
 }
 
-void json_add_objectAttribute(JsonObject* _obj, JsonObjectAttribute* _attr) {
-  if (_obj->first == NULL) {
-    _obj->first = _attr;
-  }
-  else {
-    _obj->last->next = _attr;
-  }
-
-  _obj->last = _attr;
-  _obj->length++;
-}
-
 JsonObjectAttribute* json_get_objectAttribute(JsonObject* _obj, const char* _name, size_t _len) {
   if (_obj == NULL) {
     return NULL;
@@ -522,53 +610,71 @@ JsonObjectAttribute* json_get_objectAttribute(JsonObject* _obj, const char* _nam
   return NULL;
 }
 
-static void json_free_objectAttribute(JsonObjectAttribute* _attr) {
-  if (_attr == NULL) {
-    return;
-  }
-
-  json_free_string(_attr->name);
-  json_free(_attr->data);
-  free(_attr);
-}
-
-static void json_free_object(JsonObject* _obj) {
-  if (_obj == NULL) {
-    return;
-  }
-
-  for (size_t i = 0; i < _obj->length; i++) {
-    JsonObjectDataNode* node = _obj->object[i];
-    JsonObjectDataNode* node2 = NULL;
-    if (node != NULL) {
-      node2 = node->next;
-      free(node);
-    }
-
-    while (node2 != NULL) {
-      node = node2->next;
-      free(node2);
-      node2 = node;
-    }
-  }
-
-  if (_obj->length) {
-    free(_obj->object);
-  }
-
-  JsonObjectAttribute* attr = _obj->first;
-  JsonObjectAttribute* attr2;
-  while (attr) {
-    attr2 = attr;
-    attr = attr->next;
-    json_free_objectAttribute(attr2);
-  }
-
-  free(_obj);
-}
-
-
 // Array
+static void json_free_arrayItem(JsonArrayItem* _item) {
+  if (_item == NULL) {
+    return;
+  }
+
+  json_free(_item->data);
+  free(_item);
+}
+
+static JsonArrayItem* json_decode_arrayItem(JsonStream* _enc) {
+  if (_enc == NULL || _enc->length == 0) {
+    return NULL;
+  }
+
+  json_string_ltrim(_enc);
+
+  JsonArrayItem*  item = malloc(sizeof(JsonArrayItem));
+  item->next = NULL;
+
+  // Get Value
+  item->data = json_decode_value(_enc);
+  if (item->data == NULL) {
+    goto clean;
+  }
+
+  return item;
+
+ clean:
+  json_free_arrayItem(item);
+  return NULL;
+}
+
+void json_add_arrayItem(JsonArray* _arr, JsonArrayItem* _item) {
+  if (_arr->first == NULL) {
+    _arr->first = _item;
+  }
+  else {
+    _arr->last->next = _item;
+  }
+
+  _arr->last = _item;
+  _arr->length++;
+}
+
+static void json_free_array(JsonArray* _arr) {
+  if (_arr == NULL) {
+    return;
+  }
+
+  if (_arr->array != NULL) {
+    free(_arr->array);
+  }
+
+  JsonArrayItem* item = _arr->first;
+  JsonArrayItem* item2;
+  while (item) {
+    item2 = item;
+    item = item->next;
+    json_free_arrayItem(item2);
+  }
+
+  free(_arr);
+}
+
 static JsonArray* json_decode_array(JsonStream* _enc) {
   if (_enc == NULL || _enc->length == 0) {
     return NULL;
@@ -629,41 +735,6 @@ static JsonArray* json_decode_array(JsonStream* _enc) {
   return NULL;
 }
 
-static JsonArrayItem* json_decode_arrayItem(JsonStream* _enc) {
-  if (_enc == NULL || _enc->length == 0) {
-    return NULL;
-  }
-
-  json_string_ltrim(_enc);
-
-  JsonArrayItem*  item = malloc(sizeof(JsonArrayItem));
-  item->next = NULL;
-
-  // Get Value
-  item->data = json_decode_value(_enc);
-  if (item->data == NULL) {
-    goto clean;
-  }
-
-  return item;
-
- clean:
-  json_free_arrayItem(item);
-  return NULL;
-}
-
-void json_add_arrayItem(JsonArray* _arr, JsonArrayItem* _item) {
-  if (_arr->first == NULL) {
-    _arr->first = _item;
-  }
-  else {
-    _arr->last->next = _item;
-  }
-
-  _arr->last = _item;
-  _arr->length++;
-}
-
 JsonArrayItem* json_get_arrayItem(JsonArray* _arr, size_t _index) {
   if (_arr == NULL) {
     return NULL;
@@ -674,35 +745,6 @@ JsonArrayItem* json_get_arrayItem(JsonArray* _arr, size_t _index) {
   }
 
   return _arr->array[_index];
-}
-
-static void json_free_arrayItem(JsonArrayItem* _item) {
-  if (_item == NULL) {
-    return;
-  }
-
-  json_free(_item->data);
-  free(_item);
-}
-
-static void json_free_array(JsonArray* _arr) {
-  if (_arr == NULL) {
-    return;
-  }
-
-  if (_arr->array != NULL) {
-    free(_arr->array);
-  }
-
-  JsonArrayItem* item = _arr->first;
-  JsonArrayItem* item2;
-  while (item) {
-    item2 = item;
-    item = item->next;
-    json_free_arrayItem(item2);
-  }
-
-  free(_arr);
 }
 
 void json_free(JsonValue* _data) {
@@ -782,46 +824,6 @@ static JsonValue* json_decode_value(JsonStream* _enc) {
   }
 
   return data;
-}
-
-static JsonObjectAttribute* json_decode_objectAttribute(JsonStream* _enc) {
-  if (_enc == NULL || _enc->length == 0) {
-    return NULL;
-  }
-
-  json_string_ltrim(_enc);
-
-  if (_enc->current[0] != JSON_STRING) {
-    return NULL;
-  }
-
-  // Get key
-  JsonObjectAttribute* attr = malloc(sizeof(JsonObjectAttribute));
-  attr->next = NULL;
-  attr->name = json_decode_string(_enc);
-  if (attr->name == NULL) {
-    goto clean;
-  }
-
-  // Search for :
-  ssize_t colon_pos = json_string_indexOf(':', _enc->current, _enc->length, 0);
-  if (colon_pos < 0) {
-    goto clean;
-  }
-
-  json_move_stream(_enc, colon_pos + 1);
-
-  // Get Value
-  attr->data = json_decode_value(_enc);
-  if (attr->data == NULL) {
-    goto clean;
-  }
-
-  return attr;
-
- clean:
-  json_free_objectAttribute(attr);
-  return NULL;
 }
 
 JsonValue* json_decode(const char* _json)
