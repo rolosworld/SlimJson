@@ -61,7 +61,7 @@ static ssize_t json_string_indexOf(char _c, const char* _str, size_t _len, unsig
     return -1;
   }
 
-  for (int i = 0; i < _len; i++) {
+  for (size_t i = 0; i < _len; i++) {
     if (_str[i] == '\0') {
       return -1;
     }
@@ -141,10 +141,6 @@ static void json_move_stream(JsonStream* _s, size_t _amount) {
   _s->position += _amount;
   _s->current += _amount;
   _s->length -= _amount;
-
-  if (json_string_length(_s->current) != _s->length) {
-    int i = 0;
-  }
 }
 
 static char* json_substring(const char* _str, size_t _len) {
@@ -535,7 +531,7 @@ static JsonObject* json_decode_object(JsonStream* _enc) {
   return NULL;
 }
 
-static JsonObjectAttribute* json_get_objectAttribute(JsonObject* _obj, const char* _name, size_t _len) {
+static JsonObjectAttribute* json_get_objectAttribute(const JsonObject* _obj, const char* _name, size_t _len) {
   if (_obj == NULL) {
     return NULL;
   }
@@ -550,7 +546,6 @@ static JsonObjectAttribute* json_get_objectAttribute(JsonObject* _obj, const cha
 
   size_t i = json_string_hash(_name, _len) % _obj->length;
   JsonObjectDataNode* node = _obj->object[i];
-  size_t len = json_string_length(_name);
   while (node) {
     if (json_equal_strings(node->attribute->name->value, node->attribute->name->length, _name, _len) == 1) {
       return node->attribute;
@@ -686,7 +681,7 @@ static JsonArray* json_decode_array(JsonStream* _enc) {
   return NULL;
 }
 
-static JsonArrayItem* json_get_arrayItem(JsonArray* _arr, size_t _index) {
+static JsonArrayItem* json_get_arrayItem(const JsonArray* _arr, size_t _index) {
   if (_arr == NULL) {
     return NULL;
   }
@@ -914,55 +909,6 @@ typedef struct JsonStringNode {
 
 static JsonStringNode* json_encode_value(JsonValue* _val);
 
-static char* json_string_copy(const char* _str) {
-  size_t len = json_string_length(_str);
-  char* str = malloc(len + 1);
-  str[len] = '\0';
-  while (len--) {
-    str[len] = _str[len];
-  }
-  return str;
-}
-
-static char json_string_isEscapable(char _c) {
-  switch (_c) {
-  case '"':
-  case '\\':
-  case '/':
-  case '\b':
-  case '\f':
-  case '\n':
-  case '\r':
-  case '\t':
-    return 1;
-  }
-  return 0;
-}
-
-static size_t json_string_escapableCount(const char* _str, size_t _len) {
-  size_t escapables = 0;
-  while (_len--) {
-    if (json_string_isEscapable(_str[_len])) {
-      escapables++;
-    }
-  }
-  return escapables;
-}
-
-static char* json_string_escapedCopy(const char* _str) {
-  size_t len = json_string_length(_str);
-  size_t len2 = len + json_string_escapableCount(_str, len);
-
-  char* str = malloc(len2 + 1);
-  while (len) {
-    str[len2--] = _str[len];
-    if (json_string_isEscapable(_str[len--])) {
-      str[len2--] = '\\';
-    }
-  }
-  return str;
-}
-
 static void json_free_stringNode(JsonStringNode* _node) {
   if (_node == NULL) {
     return;
@@ -1052,7 +998,7 @@ static JsonStringNode* json_encode_bool(JsonBool* _bol) {
   return node;
 }
 
-static JsonStringNode* json_encode_null(JsonNull* _nul) {
+static JsonStringNode* json_encode_null() {
   size_t len = 4;
   JsonStringNode* node = json_new_stringNode(len + 1);
   json_string_cat(node->value, len, NULL_STR);
@@ -1147,7 +1093,7 @@ static JsonStringNode* json_encode_value(JsonValue* _val) {
     return json_encode_number((JsonNumber*)_val->data);
     break;
   case JSON_NULL:
-    return json_encode_null((JsonNull*)_val->data);
+    return json_encode_null();
     break;
   case JSON_STRING:
     return json_encode_string((JsonString*)_val->data);
@@ -1159,6 +1105,8 @@ static JsonStringNode* json_encode_value(JsonValue* _val) {
     return json_encode_array((JsonArray*)_val->data);
     break;
   }
+
+  return NULL;
 }
 
 char* json_encode(JsonValue* _value) {
@@ -1177,50 +1125,118 @@ const JsonValue* GetValue(const JsonValue* _v, const char* _path) {
     return v;
 }
 
+static const char* json_value_toString(const JsonValue* _v) {
+    if (_v == NULL || _v->type != JSON_STRING) {
+      return NULL;
+    }
+
+    const JsonString* s = (const JsonString*)_v->data;
+    return s->value;
+}
+
 const char* json_get_string(const JsonValue* _v, const char* _path) {
-    const JsonValue* v = json_get(_v, _path);
-    if (v == NULL || v->type != JSON_STRING) {
-      return NULL;
-    }
-
-    const JsonString* s = (const JsonString*)v->data;
-    return s->value;
+    return json_value_toString(json_get(_v, _path));
 }
 
-const char* json_arrayItem_toString(const JsonArrayItem* _i) {
-    if (_i == NULL || _i->data->type != JSON_STRING) {
-      return NULL;
-    }
-
-    const JsonString* s = (const JsonString*)_i->data->data;
-    return s->value;
-}
-
-const JsonObject* json_get_object(const JsonValue* _v, const char* _path) {
-    const JsonValue* v = json_get(_v, _path);
-    if (v == NULL || v->type != JSON_OBJECT) {
-      return NULL;
-    }
-
-    return (const JsonObject*)v->data;
-}
-
-const JsonArray* json_get_array(const JsonValue* _v, const char* _path) {
-    const JsonValue* v = json_get(_v, _path);
-    if (v == NULL || v->type != JSON_ARRAY) {
-      return NULL;
-    }
-
-    return (const JsonArray*)v->data;
-}
-
-double json_get_number(const JsonValue* _v, const char* _path) {
-    const JsonValue* v = json_get(_v, _path);
-    if (v == NULL || v->type != JSON_NUMBER) {
+static double json_value_toNumber(const JsonValue* _v) {
+    if (_v == NULL || _v->type != JSON_NUMBER) {
       return 0;
     }
 
-    const JsonNumber* n = (JsonNumber*)v->data;
+    const JsonNumber* n = (const JsonNumber*)_v->data;
     return n->value;
 }
 
+double json_get_number(const JsonValue* _v, const char* _path) {
+    return json_value_toNumber(json_get(_v, _path));
+}
+
+static char json_value_toBool(const JsonValue* _v) {
+    if (_v == NULL || _v->type != JSON_BOOL) {
+      return -1;
+    }
+
+    const JsonBool* b = (const JsonBool*)_v->data;
+    return b->value;
+}
+
+char json_get_bool(const JsonValue* _v, const char* _path) {
+    return json_value_toBool(json_get(_v, _path));
+}
+
+static char json_value_toNull(const JsonValue* _v) {
+    if (_v == NULL || _v->type != JSON_NULL) {
+      return -1;
+    }
+
+    const JsonNull* n = (const JsonNull*)_v->data;
+    return n->value;
+}
+
+char json_get_null(const JsonValue* _v, const char* _path) {
+    return json_value_toNull(json_get(_v, _path));
+}
+
+const JsonObject* json_get_object(const JsonValue* _v, const char* _path) {
+    if (_path != NULL) {
+        _v = json_get(_v, _path);
+    }
+
+    if (_v == NULL || _v->type != JSON_OBJECT) {
+      return NULL;
+    }
+
+    return (const JsonObject*)_v->data;
+}
+
+const char* json_get_object_string(const JsonObject* _obj, const char* _attributeName) {
+    JsonObjectAttribute* attr = json_get_objectAttribute(_obj, _attributeName, json_string_length(_attributeName));
+    return json_value_toString(attr->data);
+}
+
+double json_get_object_number(const JsonObject* _obj, const char* _attributeName) {
+    JsonObjectAttribute* attr = json_get_objectAttribute(_obj, _attributeName, json_string_length(_attributeName));
+    return json_value_toNumber(attr->data);
+}
+
+char json_get_object_bool(const JsonObject* _obj, const char* _attributeName) {
+    JsonObjectAttribute* attr = json_get_objectAttribute(_obj, _attributeName, json_string_length(_attributeName));
+    return json_value_toBool(attr->data);
+}
+
+char json_get_object_null(const JsonObject* _obj, const char* _attributeName) {
+    JsonObjectAttribute* attr = json_get_objectAttribute(_obj, _attributeName, json_string_length(_attributeName));
+    return json_value_toNull(attr->data);
+}
+
+const JsonArray* json_get_array(const JsonValue* _v, const char* _path) {
+    if (_path != NULL) {
+        _v = json_get(_v, _path);
+    }
+
+    if (_v == NULL || _v->type != JSON_ARRAY) {
+      return NULL;
+    }
+
+    return (const JsonArray*)_v->data;
+}
+
+const char* json_get_array_string(const JsonArray* _arr, size_t _itemIndex) {
+    JsonArrayItem* item = json_get_arrayItem(_arr, _itemIndex);
+    return json_value_toString(item->data);
+}
+
+double json_get_array_number(const JsonArray* _arr, size_t _itemIndex) {
+    JsonArrayItem* item = json_get_arrayItem(_arr, _itemIndex);
+    return json_value_toNumber(item->data);
+}
+
+char json_get_array_bool(const JsonArray* _arr, size_t _itemIndex) {
+    JsonArrayItem* item = json_get_arrayItem(_arr, _itemIndex);
+    return json_value_toBool(item->data);
+}
+
+char json_get_array_null(const JsonArray* _arr, size_t _itemIndex) {
+    JsonArrayItem* item = json_get_arrayItem(_arr, _itemIndex);
+    return json_value_toNull(item->data);
+}

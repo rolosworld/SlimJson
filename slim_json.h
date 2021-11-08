@@ -122,25 +122,23 @@ const JsonValue* json_get(const JsonValue* _v, const char* _path);
 
 const char* json_get_string(const JsonValue* _v, const char* _path);
 double json_get_number(const JsonValue* _v, const char* _path);
+char json_get_bool(const JsonValue* _v, const char* _path);
+char json_get_null(const JsonValue* _v, const char* _path);
 
-// TODO:
-// json_get_bool(v, path)
-// json_get_null(v, path)
-//
-// json_get_object_string(obj, attributeName)
-// json_get_object_number(obj, attributeName)
-// json_get_object_bool(obj, attributeName)
-// json_get_object_null(obj, attributeName)
-//
-// json_get_array_string(arr, index)
-// json_get_array_number(arr, index)
-// json_get_array_bool(arr, index)
-// json_get_array_null(arr, index)
-
+// Object
 const JsonObject* json_get_object(const JsonValue* _v, const char* _path);
-const JsonArray* json_get_array(const JsonValue* _v, const char* _path);
+const char* json_get_object_string(const JsonObject* _obj, const char* _attributeName);
+const char* json_get_object_string(const JsonObject* _obj, const char* _attributeName);
+double json_get_object_number(const JsonObject* _obj, const char* _attributeName);
+char json_get_object_bool(const JsonObject* _obj, const char* _attributeName);
+char json_get_object_null(const JsonObject* _obj, const char* _attributeName);
 
-const char* json_arrayItem_toString(const JsonArrayItem* _i);
+// Array
+const JsonArray* json_get_array(const JsonValue* _v, const char* _path);
+const char* json_get_array_string(const JsonArray* _arr, size_t _itemIndex);
+double json_get_array_number(const JsonArray* _arr, size_t _itemIndex);
+char json_get_array_bool(const JsonArray* _arr, size_t _itemIndex);
+char json_get_array_null(const JsonArray* _arr, size_t _itemIndex);
 
 // Encode
 char* json_encode(JsonValue* _value);
