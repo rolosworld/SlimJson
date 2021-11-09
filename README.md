@@ -16,7 +16,7 @@ Just copy slim_json.h and slim_json.c into your project and mention the license 
 - Free the JsonValue
 
 ```c
-char jsonString[] = "{\"a\":{\"1\":[{\"b\":[3,4]}]},\"b\":[2,{\"q\":true,\"rrr\":null}]}";
+char jsonString[] = "{\"a\":{\"1\":[{\"b\":[3,4]}]},\"b\":[2,{\"str\":\"Foo Bar\",\"q\":true,\"rrr\":null}]}";
 
 // Decoding the JSON string into the JsonValue structure:
 JsonValue* v = json_decode(jsonString);
@@ -25,31 +25,16 @@ if (v->type == JSON_ERROR) {
     printf("%s\n",e.msg);
 }
 
-/*
-Getting a value from the JsonValue structure. Notice I passed a weird looking string. This string helps selecting the desired value.
+double a = json_get_number(v, "{a}.{1}.0.{b}.1");
+char b = json_get_bool(v, "{b}.1.{q}");
+char c = json_get_null(v, "{b}.1.{rrr}");
+const char* d = json_get_string(v, "{b}.1.{str}");
 
-The rules for the search string are:
-- Encapsulate attribute names between {}
-- Array indexes don't need encapsulation
-- Separate with a dot '.'
+const JsonObject* obj = json_get_object(v, NULL);
+char o1 = json_get_object_array(o, "a")[0] == '1';
 
-In this example we want to:
-- Get the value on the attribuete "a"
-- Then get the attribute "1"
-- Then get the index 0
-- Then get the attribute "b"
-- Then get the index 1
-
-So, json_get will return the value on index 1 which is 4.
-*/
-const JsonValue* val = json_get(v, "{a}.{1}.0.{b}.1");
-
-// Verify what type of value it is:
-if (val->type == JSON_NUMBER) {
-    // val->data is void* so we must assign the proper data type:
-    JsonNumber* n = (JsonNumber*)val->data;
-    printf("%lf", n->value);
-}
+const JsonArray* arr = json_get_array(v, NULL);
+char o1 = json_get_array_string(o, 0)[0] == 'a';
 
 // Free the JsonValue:
 json_free(v);

@@ -1134,10 +1134,6 @@ static const char* json_value_toString(const JsonValue* _v) {
     return s->value;
 }
 
-const char* json_get_string(const JsonValue* _v, const char* _path) {
-    return json_value_toString(json_get(_v, _path));
-}
-
 static double json_value_toNumber(const JsonValue* _v) {
     if (_v == NULL || _v->type != JSON_NUMBER) {
       return 0;
@@ -1145,10 +1141,6 @@ static double json_value_toNumber(const JsonValue* _v) {
 
     const JsonNumber* n = (const JsonNumber*)_v->data;
     return n->value;
-}
-
-double json_get_number(const JsonValue* _v, const char* _path) {
-    return json_value_toNumber(json_get(_v, _path));
 }
 
 static char json_value_toBool(const JsonValue* _v) {
@@ -1160,10 +1152,6 @@ static char json_value_toBool(const JsonValue* _v) {
     return b->value;
 }
 
-char json_get_bool(const JsonValue* _v, const char* _path) {
-    return json_value_toBool(json_get(_v, _path));
-}
-
 static char json_value_toNull(const JsonValue* _v) {
     if (_v == NULL || _v->type != JSON_NULL) {
       return -1;
@@ -1171,6 +1159,34 @@ static char json_value_toNull(const JsonValue* _v) {
 
     const JsonNull* n = (const JsonNull*)_v->data;
     return n->value;
+}
+
+static const JsonObject* json_value_toObject(const JsonValue* _v) {
+    if (_v == NULL || _v->type != JSON_OBJECT) {
+      return NULL;
+    }
+
+    return (const JsonObject*)_v->data;
+}
+
+static const JsonArray* json_value_toArray(const JsonValue* _v) {
+    if (_v == NULL || _v->type != JSON_ARRAY) {
+      return NULL;
+    }
+
+    return (const JsonArray*)_v->data;
+}
+
+const char* json_get_string(const JsonValue* _v, const char* _path) {
+    return json_value_toString(json_get(_v, _path));
+}
+
+double json_get_number(const JsonValue* _v, const char* _path) {
+    return json_value_toNumber(json_get(_v, _path));
+}
+
+char json_get_bool(const JsonValue* _v, const char* _path) {
+    return json_value_toBool(json_get(_v, _path));
 }
 
 char json_get_null(const JsonValue* _v, const char* _path) {
@@ -1182,11 +1198,7 @@ const JsonObject* json_get_object(const JsonValue* _v, const char* _path) {
         _v = json_get(_v, _path);
     }
 
-    if (_v == NULL || _v->type != JSON_OBJECT) {
-      return NULL;
-    }
-
-    return (const JsonObject*)_v->data;
+    return json_value_toObject(_v);
 }
 
 const char* json_get_object_string(const JsonObject* _obj, const char* _attributeName) {
@@ -1209,16 +1221,22 @@ char json_get_object_null(const JsonObject* _obj, const char* _attributeName) {
     return json_value_toNull(attr->data);
 }
 
+const JsonArray* json_get_object_array(const JsonObject* _obj, const char* _attributeName) {
+    JsonObjectAttribute* attr = json_get_objectAttribute(_obj, _attributeName, json_string_length(_attributeName));
+    return json_value_toArray(attr->data);
+}
+
+const JsonObject* json_get_object_object(const JsonObject* _obj, const char* _attributeName) {
+    JsonObjectAttribute* attr = json_get_objectAttribute(_obj, _attributeName, json_string_length(_attributeName));
+    return json_value_toObject(attr->data);
+}
+
 const JsonArray* json_get_array(const JsonValue* _v, const char* _path) {
     if (_path != NULL) {
         _v = json_get(_v, _path);
     }
 
-    if (_v == NULL || _v->type != JSON_ARRAY) {
-      return NULL;
-    }
-
-    return (const JsonArray*)_v->data;
+    return json_value_toArray(_v);
 }
 
 const char* json_get_array_string(const JsonArray* _arr, size_t _itemIndex) {
@@ -1239,4 +1257,14 @@ char json_get_array_bool(const JsonArray* _arr, size_t _itemIndex) {
 char json_get_array_null(const JsonArray* _arr, size_t _itemIndex) {
     JsonArrayItem* item = json_get_arrayItem(_arr, _itemIndex);
     return json_value_toNull(item->data);
+}
+
+const JsonArray* json_get_array_array(const JsonArray* _arr, size_t _itemIndex) {
+    JsonArrayItem* item = json_get_arrayItem(_arr, _itemIndex);
+    return json_value_toArray(item->data);
+}
+
+const JsonObject* json_get_array_object(const JsonArray* _arr, size_t _itemIndex) {
+    JsonArrayItem* item = json_get_arrayItem(_arr, _itemIndex);
+    return json_value_toObject(item->data);
 }
