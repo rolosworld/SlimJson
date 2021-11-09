@@ -37,6 +37,11 @@ const JsonObject* obj2 = json_get_array_object(arr, 1);
 
 double z = json_get_array_number(arr, 0);
 
+// You can encode a JsonValue into a json string with:
+char* encoded = json_encode(v);
+printf("JSON: %s\n", encoded);
+free(encoded)
+
 // Free the JsonValue:
 json_free(v);
 
