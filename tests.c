@@ -105,12 +105,35 @@ char test_6() {
   r = r && json_get_bool(v, "{b}.1.{q}") == 1;
   r = r && json_get_null(v, "{b}.1.{rrr}") == 0;
 
-  char* encoded = json_encode(v);
 #if DEBUG == 1
+  char* encoded = json_encode(v);
   printf("JSON1: %s\n", json);
   printf("JSON2: %s\n", encoded);
-#endif
   free(encoded);
+#endif
+
+  json_free(v);
+
+  return r;
+}
+
+char test_7() {
+  char json[] = "{\"a\":{\"1\":[{\"b\":[3,[4],{\"a\":1}]}]},\"b\":[2,{\"q\":true,\"rrr\":null}]}";
+  JsonValue* v = json_decode(json);
+  char r = 1;
+  const JsonObject* obj = json_get_object(v, NULL);
+  r = r && obj != NULL;
+  const JsonObject* obj2 = json_get_object_object(obj, "a");
+  r = r && obj2 != NULL;
+  const JsonArray* arr3 = json_get_object_array(obj, "b");
+  r = r && arr3 != NULL;
+
+  const JsonArray* arr = json_get_array(v, "{a}.{1}.0.{b}");
+  r = r && arr != NULL;
+  const JsonArray* arr2 = json_get_array_array(arr, 1);
+  r = r && arr2 != NULL;
+  obj2 = json_get_array_object(arr, 2);
+  r = r && obj2 != NULL;
 
   json_free(v);
 
@@ -125,6 +148,7 @@ int main()
   printf("test_4: %d\n", test_4());
   printf("test_5: %d\n", test_5());
   printf("test_6: %d\n", test_6());
+  printf("test_7: %d\n", test_7());
 
   return 0;
 }
