@@ -105,6 +105,9 @@ char test_6() {
   r = r && json_get_bool(v, "{b}.1.{q}") == 1;
   r = r && json_get_null(v, "{b}.1.{rrr}") == 0;
 
+  double a = json_get_number(v, "{a}");
+  r = r && a != a;
+
 #if DEBUG == 1
   char* encoded = json_encode(v);
   printf("JSON1: %s\n", json);
