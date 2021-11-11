@@ -1136,7 +1136,7 @@ static const char* json_value_toString(const JsonValue* _v) {
 
 static double json_value_toNumber(const JsonValue* _v) {
     if (_v == NULL || _v->type != JSON_NUMBER) {
-      return 0/0.0; // return NaN
+      return 0;
     }
 
     const JsonNumber* n = (const JsonNumber*)_v->data;
