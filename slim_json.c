@@ -1134,10 +1134,14 @@ static const char* json_value_toString(const JsonValue* _v) {
     return s->value;
 }
 
-static double json_value_toNumber(const JsonValue* _v) {
-    if (_v == NULL || _v->type != JSON_NUMBER) {
+static double json_undefined() {
       double a = 0;
       return a/a;
+}
+
+static double json_value_toNumber(const JsonValue* _v) {
+    if (_v == NULL || _v->type != JSON_NUMBER) {
+      return json_undefined();
     }
 
     const JsonNumber* n = (const JsonNumber*)_v->data;
@@ -1204,31 +1208,49 @@ const JsonObject* json_get_object(const JsonValue* _v, const char* _path) {
 
 const char* json_get_object_string(const JsonObject* _obj, const char* _attributeName) {
     JsonObjectAttribute* attr = json_get_objectAttribute(_obj, _attributeName, json_string_length(_attributeName));
+    if (attr == NULL) {
+      return NULL;
+    }
     return json_value_toString(attr->data);
 }
 
 double json_get_object_number(const JsonObject* _obj, const char* _attributeName) {
     JsonObjectAttribute* attr = json_get_objectAttribute(_obj, _attributeName, json_string_length(_attributeName));
+    if (attr == NULL) {
+      return json_undefined();
+    }
     return json_value_toNumber(attr->data);
 }
 
 char json_get_object_bool(const JsonObject* _obj, const char* _attributeName) {
     JsonObjectAttribute* attr = json_get_objectAttribute(_obj, _attributeName, json_string_length(_attributeName));
+    if (attr == NULL) {
+      return '\0';
+    }
     return json_value_toBool(attr->data);
 }
 
 char json_get_object_null(const JsonObject* _obj, const char* _attributeName) {
     JsonObjectAttribute* attr = json_get_objectAttribute(_obj, _attributeName, json_string_length(_attributeName));
+    if (attr == NULL) {
+      return '\0';
+    }
     return json_value_toNull(attr->data);
 }
 
 const JsonArray* json_get_object_array(const JsonObject* _obj, const char* _attributeName) {
     JsonObjectAttribute* attr = json_get_objectAttribute(_obj, _attributeName, json_string_length(_attributeName));
+    if (attr == NULL) {
+      return NULL;
+    }
     return json_value_toArray(attr->data);
 }
 
 const JsonObject* json_get_object_object(const JsonObject* _obj, const char* _attributeName) {
     JsonObjectAttribute* attr = json_get_objectAttribute(_obj, _attributeName, json_string_length(_attributeName));
+    if (attr == NULL) {
+      return NULL;
+    }
     return json_value_toObject(attr->data);
 }
 
@@ -1242,30 +1264,48 @@ const JsonArray* json_get_array(const JsonValue* _v, const char* _path) {
 
 const char* json_get_array_string(const JsonArray* _arr, size_t _itemIndex) {
     JsonArrayItem* item = json_get_arrayItem(_arr, _itemIndex);
+    if (item == NULL) {
+      return NULL;
+    }
     return json_value_toString(item->data);
 }
 
 double json_get_array_number(const JsonArray* _arr, size_t _itemIndex) {
     JsonArrayItem* item = json_get_arrayItem(_arr, _itemIndex);
+    if (item == NULL) {
+      return json_undefined();
+    }
     return json_value_toNumber(item->data);
 }
 
 char json_get_array_bool(const JsonArray* _arr, size_t _itemIndex) {
     JsonArrayItem* item = json_get_arrayItem(_arr, _itemIndex);
+    if (item == NULL) {
+      return '\0';
+    }
     return json_value_toBool(item->data);
 }
 
 char json_get_array_null(const JsonArray* _arr, size_t _itemIndex) {
     JsonArrayItem* item = json_get_arrayItem(_arr, _itemIndex);
+    if (item == NULL) {
+      return '\0';
+    }
     return json_value_toNull(item->data);
 }
 
 const JsonArray* json_get_array_array(const JsonArray* _arr, size_t _itemIndex) {
     JsonArrayItem* item = json_get_arrayItem(_arr, _itemIndex);
+    if (item == NULL) {
+      return NULL;
+    }
     return json_value_toArray(item->data);
 }
 
 const JsonObject* json_get_array_object(const JsonArray* _arr, size_t _itemIndex) {
     JsonArrayItem* item = json_get_arrayItem(_arr, _itemIndex);
+    if (item == NULL) {
+      return NULL;
+    }
     return json_value_toObject(item->data);
 }
